@@ -35,10 +35,15 @@ https://linktr.ee/h4km
 linked in :
 https://www.linkedin.com/posts/jamesmikedupont_join-the-str-discord-server-activity-7285429593245724673-mWPR?utm_source=share&utm_medium=member_android
 
-twitter :
+Dev twitter :
 https://twitter.com/introsp3ctor/
 
-Community claim  on dex screener 
+Official twitter:
+https://x.com/zos_sfm
+
+Website : 
+https://solfunmeme.com
+
 
 Locked here : 
 https://app.streamflow.finance/contract/solana/mainnet/7Hny19uRWs6FhWFXrasUbqkE4rc8ciTdfQ2iyr2PVeva
