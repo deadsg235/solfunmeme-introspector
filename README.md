@@ -4,8 +4,9 @@ https://codeberg.org/introspector/SOLFUNMEME
 # SOLFUNMEME
 
 James Michael DuPonts's Zero Ontology System (SOLFUNMEME) 
-CA: BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump
-Author address : HMEKzpgzJEfyYyqoob5uGHR9P3LF6248zbm8tWgaApim
+
+* CA: BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump
+* Author address : HMEKzpgzJEfyYyqoob5uGHR9P3LF6248zbm8tWgaApim
 
 Zero Ontology System Support Token 1
 
