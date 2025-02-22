@@ -3,8 +3,9 @@ https://codeberg.org/introspector/SOLFUNMEME
 
 # SOLFUNMEME
 
-HMEKzp's Zero Ontology System (SOLFUNMEME) 
-
+James Michael DuPonts's Zero Ontology System (SOLFUNMEME) 
+CA: BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump
+Author address : HMEKzpgzJEfyYyqoob5uGHR9P3LF6248zbm8tWgaApim
 
 Zero Ontology System Support Token 1
 
@@ -24,7 +25,7 @@ discord
 https://discord.gg/WASKdrBBzu
 
 our solana token address is here 
-BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump
+CA: BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump
 
 Telegram is here :
 https://t.me/introsp3ctor
