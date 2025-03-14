@@ -1,7 +1,7 @@
 This is the official transcript of the creation of the SOLFUNMEME
 https://chatgpt.com/share/67891e59-23e8-8012-8a45-f717085e0e89
 
-This is a copy of a conversation between ChatGPT & Anonymous.
+This is a copy of a conversation between ChatGPT & Dev J. Mike DuPont aka @h4ck3rm1k3 aka @introsp3ctor.
 
 Report content
 You said:
