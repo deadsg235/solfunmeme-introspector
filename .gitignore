@@ -1,2 +1,3 @@
 /.lake
 rpc_cache/temp_*_request.json
+rpc_cache/*

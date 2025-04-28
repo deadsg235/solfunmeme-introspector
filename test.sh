@@ -1,0 +1,1 @@
+curl -X POST -H "Content-Type: application/json" --data @test.json     "https://api.mainnet-beta.solana.com"

@@ -1,5 +1,5 @@
 --getSolfunmeme.lean
-
+import Lean.Data.Json
 import Lean
 import Lean.Data.Json.Basic
 import Lean.Data.Json.Parser
@@ -58,20 +58,137 @@ structure TransactionDetails where
 deriving ToJson, FromJson, Inhabited, Repr
 
 
-instance : ToString TransactionDetailsResp where
---  toString resp := s!"TransactionDetailsResp(response: {resp.response})"
- toString _ := s!"TransactionDetailsResp(response:TODO)"
+
+-- Structure for inner instructions
+structure InnerInstruction where
+  accounts : List Nat
+  data : String
+  programIdIndex : Nat
+  stackHeight : Option Nat
+  deriving ToJson, FromJson, Inhabited, Repr
+
+-- Structure for an inner instruction block
+structure InnerInstructionBlock where
+  index : Nat
+  instructions : List InnerInstruction
+  deriving ToJson, FromJson, Inhabited, Repr
+
+-- Structure for loaded addresses
+structure LoadedAddresses where
+  readonly : List String
+  writable : List String
+  deriving ToJson, FromJson, Inhabited, Repr
+
+-- Structure for token balance
+structure TokenBalance where
+  accountIndex : Nat
+  mint : String
+  owner : String
+  programId : String
+  uiTokenAmount : Json -- Simplified; could be a detailed structure if needed
+  deriving ToJson, FromJson, Inhabited
+
+-- Structure for meta information
+structure Meta2 where
+  computeUnitsConsumed : Nat
+  err : Option String
+  fee : Nat
+  innerInstructions : List InnerInstructionBlock
+  loadedAddresses : LoadedAddresses
+  logMessages : List String
+  postBalances : List Nat
+  postTokenBalances : List TokenBalance
+  preBalances : List Nat
+  preTokenBalances : List TokenBalance
+  rewards : List Json -- Empty in the example, so using Json for flexibility
+  status : Json -- Could be a sum type if status has fixed variants
+  deriving ToJson, FromJson, Inhabited
+
+-- Structure for instruction
+structure Instruction where
+  accounts : List Nat
+  data : String
+  programIdIndex : Nat
+  stackHeight : Option Nat
+  deriving ToJson, FromJson, Inhabited
+
+-- Structure for message header
+structure MessageHeader where
+  numReadonlySignedAccounts : Nat
+  numReadonlyUnsignedAccounts : Nat
+  numRequiredSignatures : Nat
+  deriving ToJson, FromJson, Inhabited
+
+-- Structure for message
+structure Message2 where
+  accountKeys : List String
+  addressTableLookups : List Json -- Empty in the example
+  header : MessageHeader
+  instructions : List Instruction
+  recentBlockhash : String
+  deriving ToJson, FromJson, Inhabited
+
+-- Structure for transaction
+structure Transaction where
+  message : Message2
+  signatures : List String
+  deriving ToJson, FromJson, Inhabited
+
+-- Main TransactionDetails structure
+structure TransactionDetails2 where
+   signature : String -- Extracted from transaction.signatures[0]
+   blockTime : Nat
+   slot : Slot
+   memo : Option String -- Not present in JSON, so Option String
+   err : Option String -- From meta.err
+   confirmationStatus : String -- Inferred as "finalized"
+   deriving ToJson, FromJson, Inhabited
+
+-- Function to convert JSON result to TransactionDetails
+-- def TransactionDetails.fromResult (result : Json) : Option TransactionDetails :=
+--   do
+--     let blockTime ← result.getObjVal? "blockTime" >>= Json.getNat?
+--     let slot ← result.getObjVal? "slot" >>= Json.getNat?
+--     let meta :Meta2 ← result.getObjVal? "meta" >>= fromJson?
+--     let transaction ← result.getObjVal? "transaction" >>= Transaction.fromJson?
+--     let signature ← transaction.signatures.get? 0 -- First signature
+--     let err ← meta.err -- Already an Option String
+--     let confirmationStatus := "finalized" -- Hardcoded as per example
+--     pure {
+--       signature := signature,
+--       blockTime := blockTime,
+--       slot := slot,
+--       memo := none, -- Not present in JSON
+--       err := err,
+--       confirmationStatus := confirmationStatus
+--     }
+
+-- Example usage (pseudo-code for parsing the JSON)
+-- def parseTransactionDetails (json : Json) : Option TransactionDetails :=
+--   do
+--     let result ← json.getObjVal? "result"
+    --TransactionDetails.fromResult result
+
+--.result.map (fun td => s!"{td.signature} {td.blockTime} {td.slot} {td.confirmationStatus}"
+--instance : ToString TransactionDetailsResp where
+-- toString resp := resp.result.map (fun td => s!"{td.signature} {td.blockTime} {td.slot} {td.confirmationStatus}")
+ --s!"TransactionDetailsResp(response: {res})"  resp.result
+-- toString _ := s!"TransactionDetailsResp(response:TODO)"
 
 structure TransactionDetailsResp where
   result : List TransactionDetails
   deriving ToJson, FromJson, Inhabited, Repr
   --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
-def getTransactionSignaturesDetails (json2: Json) : IO (Except String (TransactionDetailsResp)) := do
-  IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
+
+def getSig (td:TransactionDetails) := td.signature
+
+def getTransactionSignaturesDetails (json2: Json) : IO (Except String (List String)) := do
+  --IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
   match fromJson?  json2 with
-  | Except.ok details => do
-      IO.println s!"TransactionDetails details: {details}"
-      return (Except.ok (details))
+  | Except.ok (details:TransactionDetailsResp) => do
+      let resp  :List String := details.result.map getSig
+    --  IO.println s!"TransactionDetails details: {resp}"
+      return (Except.ok (resp))
   | Except.error err => do
     IO.println s!"Error parsing JSON: {err}"
       return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
@@ -238,22 +355,6 @@ def getTokenInfo (address : Pubkey) : IO (Except String TokenInfo) := do
     let freezeAuthority := none
     pure (Except.ok { mint := address, supply, decimals, mintAuthority, freezeAuthority })
 
---def processTransactionSignatures (sig :Json) : IO (Except String (List String)) := do
-        --let blockTime := sig.getObjValD "blockTime" |>.      getNat .getD 0
-        --let confirmationStatus := sig.getObjValD "confirmationStatus" |>.getStr?.getD ""
-        --let err := sig.getObjValD "err" |>.getStr?.getD ""
-        --let memo := sig.getObjValD "memo" |>.getStr?.getD ""
-  --      let signature := sig.getObjValD "signature"
-
-       -- let sig := signature |>.getStr?.getD ""
-
-        -- |>.getStr?.getD ""
-        --let slot := sig.getObjValD "slot" |>.getNat?.getD 0
-        -- let ret := {
-        --   signature, blockTime, slot, err, programId := "", accounts := []
-        --   }
-      --pure (Except.ok sig)
---n  Except String (Array Json) : Type\nbut is expected to have type\n  Except ?m.21088 (Type ?u.21091) : Type (max ?u.21082 (?u.21091 + 1))",
 
 def processElement (sig : Json) : String :=
   match sig.getObjVal? "key" with
@@ -265,16 +366,6 @@ def processElement (sig : Json) : String :=
   | .error _ => "default2"
 
 def processElement2 ( _ :Array Json) : (List String) :=
-  --  let blockTime := sig.getObjValD "blockTime" |>.getNat?.getD 0
-  --  let confirmationStatus := sig.getObjValD "confirmationStatus" |>.getStr?.getD ""
-  --  let err := sig.getObjValD "err" |>.getStr?.getD ""
-  --  let memo := sig.getObjValD "memo" |>.getStr?.getD ""
-    -- sig.getObjVal "signature" |>.getStr? |>.bind (fun signature =>
-    -- match signature with
-    -- | none => pure (Except.error "No signature found")
-    -- | some sig =>
-    --   -- IO.println s!"Got signature {sig}"
-    --   pure (Except.ok sig)
   [""]
 
 def processTransactionSignatures (sig : Json) : IO (Except String (Array String)) := do
@@ -289,233 +380,14 @@ def processTransactionSignatures (sig : Json) : IO (Except String (Array String)
       let vals := arr2.map processElement
       pure (Except.ok vals)
 
-  --let signature := sig.getObjValD "signature" |>.getStr?.getD ""
-  --  let slot := sig.getObjValD "slot" |>.getNat?.getD 0
-  --  let programId := sig.getObjValD "programId" |>.getStr?.getD ""
-  --  let accounts := [] -- Placeholder for accounts, would need to be parsed from the response
-  --pure (Except.ok signature)
- --)
+instance : ToString TransactionDetails2 where
+toString _ := s!"TransactionDetails2..."
 
 
-  -- sig.getArr? |>.bind (fun arr =>
-  --   let signatures := arr.filterMap fun sig =>
-  --     match sig.getObjVal? "signature" |>.bind (·.getStr?) with
-  --     | none => none
-  --     | some signature => some signature
-  --   pure (Except.ok signatures))
-  --let signature := sig.getObjValD "signature" |>.getStr?.getD ""
-  --let blockTime := sig.getObjValD "blockTime" |>.getNat?.getD 0
-  --let confirmationStatus := sig.getObjValD "confirmationStatus" |>.getStr?.getD ""
-  --let err := sig.getObjValD "err" |>.getStr?.getD ""
-  --let memo := sig.getObjValD "memo" |>.getStr?.getD ""
-  --let slot := sig.getObjValD "slot" |>.getNat?.getD 0
-  --let programId := sig.getObjValD "programId" |>.getStr?.getD ""
-  --let accounts := [] -- Placeholder for accounts, would need to be parsed from the response
- -- pure (Except.ok signature)
-
-
--- def getTransactionSignatures3 (json2: Json) : IO (Except String (List String)):= do
---   let details:TransactionDetailsResp ← fromJson? json2
---   IO.println s!"Ledger details: {details}"
-
--- def proc2 (json:Json) := do
---     --let ledger : TransactionDetailsResp <- fromJson? json
---     --IO.println s!"Ledger details: {ledger}"
---     pure ledger
-
--- def getTransactionSignatures2 {Json} (json2: Json) := do
---   match json2 with
---   | Except.ok details => fromJson? details
---   | Except.error err => Except.error s!"Error parsing JSON: {err}"
-
-def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except String (List String)) := do
-  let params := Json.arr #[Json.str address, Json.mkObj [("limit", Json.num limit)]]
-  let response ← callSolanaRpc "getSignaturesForAddress" params
-  match response with
-  | Except.error err => pure (Except.error err)
-  | Except.ok json2 =>
-    IO.println s!"debug, {(json2.pretty).length}"
-    let res <- getTransactionSignaturesDetails json2
-
-
-    match res with
-    | Except.ok details =>
-      IO.println s!"Transaction details: {details}"
-      pure (Except.ok [""]) -- Placeholder for actual return value
-    | Except.error err =>
-      IO.println s!"debug, {res}"
-      IO.println s!"Error retrieving transaction details: {err}"
-      pure (Except.error err)
-    --let food := proc2 json2
-    --pure  (Except.ok [""])
-    --let res := json.getObjValD "result"
-    --let maybeAr := getArr? res
-    --IO.println s!"Got signatures response, {maybeAr}"
-    --let txs <- fromJson? json2
-    -- match fromJson? json2 with
-    -- | .error err =>
-    --   IO.println s!"Error parsing response: {err}"
-    --   pure (Except.error s!"Error parsing response: {err}")
-    -- | .ok arr =>
-    --   IO.println s!"Got signatures response, {arr.pretty 2}"
-    --   let l := arr.map processElement2
-      --let result <- fromJson? json2
-      --IO.println s!"Error parsing response: {result}"
-      --IO.println s!"Got signatures response, {json.pretty 2}"
-      --IO.println s!"Got signatures response"
-      --let l := processTransactionSignatures json
-      --IO.println s!"Got signatures {l}}"
-      --let result <- l
-      --#check result
-      --match result with
-      --| Except.ok arr =>
-        --IO.println s!"Got signatures {arr}}"
-        --pure (Except.ok [""])
-      --| Except.error err =>
-        --IO.println s!"Error processing transaction signatures: {err}"
-        --pure (Except.error err)
-    --let result <-  fromJson? json2
-    --IO.println s!"Error parsing response: {result}"
-    --TransactionDetailsResp
-    -- match maybeAr with
-    -- | .error err =>
-    --   IO.println s!"Error parsing response: {err}"
-    --   pure (Except.error s!"Error parsing response: {err}")
-    -- | .ok arr =>
-    --   IO.println s!"Got signatures response: {arr}"
-
-    pure (Except.ok [""])
-      -- | .ok arr =>
-      --   let signatures := arr.filterMap fun sig =>
-      --     match sig.getObjVal? "signature" |>.bind (·.getStr?) with
-      --     | none => none
-      --     | some signature => some signature
-      --IO.println s!"Got signatures response, {json.pretty 2}"
-      -- IO.println s!"Got signatures response"
-      -- let l := processTransactionSignatures json
-      -- IO.println s!"Got signatures {l}}"
-      -- let result <- l
-      -- #check result
-      -- match result with
-      -- | Except.ok arr =>
-      --     IO.println s!"Got signatures {arr}}"
-      --     pure (Except.ok arr)
-      -- | Except.error err =>
-      --     IO.println s!"Error processing transaction signatures: {err}"
-      --     pure (Except.error err)
-    -- |>.getArr? |>.bind (fun arr =>
-    --   let signatures := arr.filterMap fun sig =>
-    --     match sig.getObjVal? "signature" |>.bind (·.getStr?) with
-    --     | none => none
-    --     | some signature => some signature
-    --   pure (Except.ok signatures))
-    --IO.println s!"Got signatures response, {json.pretty 2}"
-    -- IO.println s!"Got signatures response"
-    -- let l := processTransactionSignatures json
-    -- --IO.println s!"Got signatures {l}}"
-    -- let result <- l
-    -- --#check result
-    -- --match result with
-    -- --| Except.ok arr =>
-    -- IO.println s!"Got signatures {result}}"
-    -- pure (Except.ok ["fff"])
-    --| Except.error err =>
---      IO.println s!"Error processing transaction signatures: {err}"
-      --pure (Except.error err)
-
-   -- #check l
-    -- match l with
-    -- | Except.ok arr =>
-    --     IO.println s!"Got signatures {arr}}"
-    --     pure (Except.ok arr)
-    -- | Except.error err =>
-    --     IO.println s!"Error processing transaction signatures: {err}"
-    --     pure (Except.error err)
-    --//let res :Json := json.getObjValD "result"
-    --let res2  := res.getArr?
-    -- match getArr? res with
-    -- | Except.ok arr => IO.println s!"Extracted array: {arr}"
-    -- | Except.error err => IO.println s!"Error: {err}"
-    --  match res.getArr? with
-    --  | .ok arr =>
-    --    let signatures := arr.filterMap fun sig =>
-    --      match sig.getObjVal? "signature" |>.bind (·.getStr?) with
-    --      | none => none
-    --      | some signature => some signature
-    --     pure (Except.ok signatures)
-    -- | none => pure (Except.error "No result array in response")
-    -- | arr  =>
-    --   let signatures := arr.filterMap fun sig =>
-    --     match sig.getObjVal? "signature" |>.bind (·.getStr?) with
-    --     | none => none
-    --     | some signature => some signature
-    --   pure (Except.ok signatures)
-
--- Query transaction signatures
--- def getTransactionSignatures2 (address : Pubkey) (limit : Nat) : IO (Except String (List TransactionDetails)) := do
---   let params := Json.arr #[Json.str address.pubkey, Json.mkObj [("limit", Json.num limit)]]
---   let response ← callSolanaRpc "getSignaturesForAddress" params
---   match response with
---   | Except.error err => pure (Except.error err)
---   | Except.ok json =>
---     IO.println s!"Got signatures response, would process in full implementation"
---     -- In a real implementation, you would parse the JSON response
---     let res := json.getObjValD "result"
---     let arr1 := res.getArr?
---     match arr1 with
---     |.error err =>
---       IO.println s!"Error parsing response: {err}"
---       pure (Except.error s!"Error parsing response: {err}")
---     |.ok g =>
---       let mut txs : List TransactionDetails := []
---       --for sig in g do
---       let list := g.map fun sig =>
---         --let blockTime := sig.getObjValD "blockTime" |>.getNat?.getD 0
---         --let confirmationStatus := sig.getObjValD "confirmationStatus" |>.getStr?.getD ""
---         --let err := sig.getObjValD "err" |>.getStr?.getD ""
---         --let memo := sig.getObjValD "memo" |>.getStr?.getD ""
---         let signature1 := sig.getObjValD "signature"
---         let signature := (signature1).getStr?
---         match signature with
---         |.error err =>
---           IO.println s!"Error parsing signature: {err}"
---         |.ok sig =>
---          -- IO.println s!"Got signature {sig}"
---           pure (sig)
-
---         -- let sig := signature.bind (fun sig =>
---         --   IO.println s!"Processing signature: {sig}"
---         --   pure sig)
---         --let sig := signature |>.getStr?.getD ""
-
---         -- |>.getStr
---         --let slot := sig.getObjValD "slot" |>.getNat?.getD 0
---         --let programId := sig.getObjValD "programId" |>.getStr?.getD ""
---         --let accounts := [] -- Placeholder for accounts, would need to be parsed from the response
---         --txs := { signature, blockTime, slot, err, programId := "", accounts := [] } :: txs
---       pure (Except.ok txs)
---   --  |.error err =>
---       --IO.println s!"Error parsing response: {err}"
-
-
---     -- match arr1 with
---     -- | some arr =>
---     --   arr.map (processTransactionSignature)
---     -- | none => pure (Except.error "No result array")
---     --  "result": [
---     --     {
---     --         "blockTime": 1745776798,
---     --         "confirmationStatus": "finalized",
---     --         "err": null,
---     --         "memo": null,
---     --         "signature": "3pwbDDzkfP6uhJqSLg1UHnsZ4vavFSoCTB3tJKx5aCzx1Dy78wXxxmaJe1wfDEj32izLjnUMbkWa9FSbMnUKwixV",
---     --         "slot": 336292412
---     --     },
---     pure (Except.ok [])
-
--- Get detailed transaction data
 def getTransactionDetails (signature : Signature) : IO (Except String TransactionDetails) := do
-  let params := Json.arr #[Json.str signature, Json.mkObj [("encoding", Json.str "jsonParsed")]]
+  let params := Json.arr #[Json.str signature,  Json.mkObj [ ( "maxSupportedTransactionVersion", Json.num 0 ) ]]
+    --("encoding", Json.str "jsonParsed")
+
   let response ← callSolanaRpc "getTransaction" params
   match response with
   | Except.error err => pure (Except.error err)
@@ -525,10 +397,52 @@ def getTransactionDetails (signature : Signature) : IO (Except String Transactio
     IO.println s!"Got transaction details response "
     -- For simplicity, returning a default TransactionDetails
     --let details := TransactionDetails.mk signature, 0, 0, none, none, "finalized"
+    IO.println s!"debug, {(json.pretty)}"
+    --let txd : TransactionDetails2  := fromJson? json
+
+    match fromJson?  json2 with
+    | Except.ok (details:TransactionDetails2) => do
+      --  IO.println s!"TransactionDetails details: {resp}"
+      IO.println s!"debug txd, {(details)}"
+        IO.sleep 2000
+        return (Except.ok (resp))
+    | Except.error err => do
+      IO.println s!"Error parsing JSON: {err}"
+
+        return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
+
+    --
+    --   match fromJson?  json2 with
+    --   | Except.ok (details:TransactionDetailsResp) => do
+    --     let resp  :List String := details.result.map getSig
+    --   --  IO.println s!"TransactionDetails details: {resp}"
+    --     return (Except.ok (resp))
+    -- | Except.error err => do
+      -- IO.println s!"Error parsing JSON: {err}"
+      --   return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
+
 
     -- "signature", 0, 0, none, none, "finalized"
     --pure (Except.ok details)
     pure (Except.error "WIP")
+
+
+def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except String (List String)) := do
+  let params := Json.arr #[Json.str address, Json.mkObj [("limit", Json.num limit)]]
+  let response ← callSolanaRpc "getSignaturesForAddress" params
+  match response with
+  | Except.error err => pure (Except.error err)
+  | Except.ok json2 =>
+    IO.println s!"debug, {(json2.pretty).length}"
+    let res <- getTransactionSignaturesDetails json2
+    match res with
+    | Except.ok details =>
+      IO.println s!"Transaction details: {details.length}"
+      pure (Except.ok details) -- Placeholder for actual return value
+    | Except.error err =>
+      IO.println s!"ERROR, {res}"
+      --IO.println s!"Error retrieving transaction details: {err}"
+      pure (Except.error err)
 
 -- Chunk ledger entries
 def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
@@ -558,18 +472,7 @@ def processWithLLM (tx : Json) : IO (Except String String) := do
 
   let outputFile := s!"{CACHE_DIR}/llm_output_{hash tx.compress}.txt"
   let leanCode := "todo"
---   let leanCode := s!"
--- import Lean.Data.Json
 
--- def main : IO Unit := do
---   let jsonStr ← IO.FS.readFile \"{tempFile}\"
---   match Json.parse jsonStr with
---   | Except.ok json =>
---     let summary := \"Processed chunk \" ++ json.getObjValD \\\"chunkId\\\".pretty 2 ++ \": \" ++ json.getObjValD \\\"data\\\".pretty 2
---     IO.FS.writeFile \"{outputFile}\" summary
---   | Except.error err =>
---     IO.FS.writeFile \"{outputFile}\" (\"Error: \" ++ err)
--- "
   let leanFile := s!"{CACHE_DIR}/temp_processor_{hash tx.compress}.lean"
   IO.FS.writeFile leanFile leanCode
   let result ← IO.Process.output {
@@ -587,6 +490,18 @@ def processWithLLM (tx : Json) : IO (Except String String) := do
     pure (Except.ok output)
   catch e =>
     pure (Except.error s!"Failed to read LLM output: {e.toString}")
+
+def ProcessSignfun (sig:String) : IO Unit := do
+      IO.println s!"Processing transaction signature: {sig}"
+      let txDetails ← getTransactionDetails sig
+      match txDetails with
+      | Except.error err =>
+        IO.println s!"Failed to fetch transaction details: {err}"
+        --raise
+        pure ()
+      | Except.ok details =>
+        IO.println s!"Transaction Details fetched successfully \n{details}"
+
 
 -- Main function
 def SolfunmemeLean : IO Unit := do
@@ -614,7 +529,13 @@ def SolfunmemeLean : IO Unit := do
       IO.println s!"Failed to fetch transactions: {err}"
       pure ()
     | Except.ok txs =>
-      IO.println s!"Successfully fetched {txs.length} transaction signatures"
+      IO.println s!"Successfully fetched {txs} transaction signatures"
+
+      for i in txs do
+        IO.println s!"Done processing token {i}"
+        ProcessSignfun i
+
+      --let txSignatures ← getTransactionDetails sig
       IO.println "Done processing token data"
 
 def main : IO Unit := do
