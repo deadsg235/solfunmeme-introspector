@@ -311,13 +311,21 @@ def callLean (filename : String) : IO Unit := do
   if !result.stderr.isEmpty then
     IO.println s!"Standard Error:\n{result.stderr}"
   IO.println s!"Exit Code: {result.exitCode}"
-
+instance : ToString TokenInfo where
+  toString info := s!"TokenInfo(mint: {info.mint}, supply: {info.supply}, ...)"
 -- Main function
 def SolfunmemeLean : IO Unit := do
   IO.println s!"Introspecting token: {TOKEN_ADDRESS}"
 
   -- Get token info
   let tokenInfo ← getTokenInfo TOKEN_ADDRESS
+
+  match tokenInfo with
+  | Except.error err =>
+    IO.println s!"Failed to fetch token info: {err}"
+    pure ()
+  | Except.ok info =>
+    IO.println s!"fetched token info: {tokenInfo}"
    --match tokenInfo with
   -- | Except.error err =>
   --   IO.println s!"Failed to fetch token info: {err}"
