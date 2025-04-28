@@ -6,12 +6,12 @@ import Lean.Data.Json.Parser
 import Lean.Data.Json.Printer
 open Lean Json ToJson FromJson
 
-structure Pubkey where
-  pubkey : String
-deriving ToJson, FromJson, Inhabited, Repr
+-- structure Pubkey where
+--   pubkey : String
+-- deriving ToJson, FromJson, Inhabited, Repr
 
-instance : ToString Pubkey where
-  toString pk := pk.pubkey
+-- instance : ToString Pubkey where
+--   toString pk := pk.pubkey
 
 structure Entry where
   entry_date : String -- ISO date or timestamp
@@ -43,9 +43,11 @@ structure TransactionDetails where
   signature : Signature
   blockTime : Nat
   slot : Slot
+  memo: Option String
   err : Option String
-  programId : String
-  accounts : List Pubkey
+  confirmationStatus : String -- "finalized",
+
+
 deriving ToJson, FromJson, Inhabited, Repr
 
 
@@ -54,9 +56,18 @@ deriving ToJson, FromJson, Inhabited, Repr
 --  toString resp := s!"TransactionDetailsResp(response:)"
 
 structure TransactionDetailsResp where
-  response : List TransactionDetails
+  result : List TransactionDetails
   deriving ToJson, FromJson, Inhabited, Repr
   --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
+def getTransactionSignaturesDetails (json2: Json) : IO (Except String (TransactionDetailsResp)) := do
+  --IO.println s!"Ledger details: {json2.pretty}"
+  match fromJson?  json2 with
+  | Except.ok details => do
+      --IO.println s!"Ledger details: {details}"
+      return (Except.ok (details))
+  | Except.error err => do
+    IO.println s!"Error parsing JSON: {err}"
+      return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
 
 instance : ToString TransactionDetailsResp where
 toString _ := s!"TransactionDetailsResp"
@@ -65,9 +76,11 @@ instance : ToString TransactionDetails where
 toString _ := s!"TransactionDetails"
   --toString td := s!"TransactionDetails(signature: {td.signature}, blockTime: {td.blockTime}, slot: {td.slot}, err: {td.err}, programId: {td.programId}, accounts: {td.accounts})"
 
+def Pubkey := String
+deriving ToJson, FromJson, Inhabited, Repr, ToString
 
 structure TokenInfo where
-  mint : Pubkey
+  mint  : Pubkey
   supply : Nat
   decimals : Nat
   mintAuthority : Option Pubkey
@@ -80,7 +93,7 @@ toString _ := s!"TokenInfo..."
 -- Constants
 def CHUNK_SIZE : Nat := 100 -- Entries per chunk
 def SIDECHAIN_DIR : String := "ai_sidechain" -- Simulated sidechain
-def TOKEN_ADDRESS : Pubkey := Pubkey.mk "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"
+def TOKEN_ADDRESS : Pubkey := "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"
 def CACHE_DIR : String := "rpc_cache" -- Directory for cached results
 
 -- Generate a cache key from method and params
@@ -169,7 +182,7 @@ def callSolanaRpc (method : String) (params : Json) : IO (Except String Json) :=
 
 -- Query token mint info
 def getTokenInfo (address : Pubkey) : IO (Except String TokenInfo) := do
-  let params := Json.arr #[Json.str address.pubkey, Json.mkObj [("encoding", Json.str "jsonParsed")]]
+  let params := Json.arr #[Json.str address, Json.mkObj [("encoding", Json.str "jsonParsed")]]
   let response ← callSolanaRpc "getAccountInfo" params
   match response with
   | Except.error err => pure (Except.error err)
@@ -230,7 +243,7 @@ def processTransactionSignatures (sig : Json) : IO (Except String (Array String)
   --| none => pure (Except.error "No result array in response")
   | .error err =>
     IO.println s!"Error parsing response: {err}"
-    IO.println s!"Error parsing response: {sig.pretty 2}"
+    --IO.println s!"Error parsing response: {sig.pretty 2}"
     pure (Except.error s!"Error parsing response: {err}")
   | .ok arr2 =>
       let vals := arr2.map processElement
@@ -265,13 +278,6 @@ def processTransactionSignatures (sig : Json) : IO (Except String (Array String)
 --   let details:TransactionDetailsResp ← fromJson? json2
 --   IO.println s!"Ledger details: {details}"
 
-def getTransactionSignaturesDetails (json2: Json) : IO (Except String (List String)) := do
-  match fromJson? json2 with
-  | Except.ok details => do
-      IO.println s!"Ledger details: {details}"
-      return (Except.ok (details))
-  | Except.error err => do
-      return (Except.error s!"Error parsing JSON: {err}")
 -- def proc2 (json:Json) := do
 --     --let ledger : TransactionDetailsResp <- fromJson? json
 --     --IO.println s!"Ledger details: {ledger}"
@@ -283,14 +289,22 @@ def getTransactionSignaturesDetails (json2: Json) : IO (Except String (List Stri
 --   | Except.error err => Except.error s!"Error parsing JSON: {err}"
 
 def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except String (List String)) := do
-  let params := Json.arr #[Json.str address.pubkey, Json.mkObj [("limit", Json.num limit)]]
+  let params := Json.arr #[Json.str address, Json.mkObj [("limit", Json.num limit)]]
   let response ← callSolanaRpc "getSignaturesForAddress" params
   match response with
   | Except.error err => pure (Except.error err)
   | Except.ok json2 =>
-    IO.println s!"debug, {json2}"
+    IO.println s!"debug, {(json2.pretty).length}"
+    let res <- getTransactionSignaturesDetails json2
 
-
+    --IO.println s!"debug, {res}"
+    match res with
+    | Except.ok details =>
+      IO.println s!"Transaction details: {details}"
+      pure (Except.ok [""]) -- Placeholder for actual return value
+    | Except.error err =>
+      IO.println s!"Error retrieving transaction details: {err}"
+      pure (Except.error err)
     --let food := proc2 json2
     --pure  (Except.ok [""])
     --let res := json.getObjValD "result"
@@ -469,13 +483,11 @@ def getTransactionDetails (signature : Signature) : IO (Except String Transactio
     IO.println s!"Got transaction details response {(json.pretty 2).length}"
     IO.println s!"Got transaction details response "
     -- For simplicity, returning a default TransactionDetails
-    let signature := ""
-    let blockTime := 0
-    let slot := (0 : Slot)
-    let err := none
-    let programId := ""
-    let accounts := []
-    pure (Except.ok { signature, blockTime, slot, err, programId, accounts := accounts })
+    let details := TransactionDetails.mk
+      signature, 0, 0, none, none, "finalized"
+
+    -- "signature", 0, 0, none, none, "finalized"
+    pure (Except.ok details)
 
 -- Chunk ledger entries
 def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
