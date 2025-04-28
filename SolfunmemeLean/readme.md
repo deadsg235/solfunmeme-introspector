@@ -24,3 +24,7 @@ Length: 82 (0x52) bytes
 0040:   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00   ................
 0050:   00 00                                                ..
 
+
+
+ c:\Users\jmikedupont\.elan\toolchains\leanprover--lean4---v4.18.0\bin\lean --run SolfunmemeLean\getSolfunmeme.lean
+ 

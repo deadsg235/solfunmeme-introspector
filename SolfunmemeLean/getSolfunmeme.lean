@@ -39,31 +39,38 @@ deriving ToJson, FromJson, Inhabited, Repr, ToString, ToString
 instance : OfNat Slot n where
   ofNat := n
 
+--{"jsonrpc":"2.0","result":[
+--{"blockTime":1745839669,
+--"confirmationStatus":"finalized",
+--"err":null,
+--"memo":null,
+--"signature":"2pozgVUc8vbGLeDWAhriwuv7zitKx3GFDmc7TrQEg3saqET18tuxo3ut7HVNQxoCzpXWnjzYN3u9CF5dGSXZG2Tc",
+
 structure TransactionDetails where
-  signature : Signature
+  signature : String
   blockTime : Nat
   slot : Slot
-  memo: Option String
-  err : Option String
+  --memo: Option String
+  --err : Option String   TransactionDetails.err: String expected
   confirmationStatus : String -- "finalized",
 
 
 deriving ToJson, FromJson, Inhabited, Repr
 
 
---instance : ToString TransactionDetailsResp where
+instance : ToString TransactionDetailsResp where
 --  toString resp := s!"TransactionDetailsResp(response: {resp.response})"
---  toString resp := s!"TransactionDetailsResp(response:)"
+ toString _ := s!"TransactionDetailsResp(response:TODO)"
 
 structure TransactionDetailsResp where
   result : List TransactionDetails
   deriving ToJson, FromJson, Inhabited, Repr
   --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
 def getTransactionSignaturesDetails (json2: Json) : IO (Except String (TransactionDetailsResp)) := do
-  --IO.println s!"Ledger details: {json2.pretty}"
+  IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
   match fromJson?  json2 with
   | Except.ok details => do
-      --IO.println s!"Ledger details: {details}"
+      IO.println s!"TransactionDetails details: {details}"
       return (Except.ok (details))
   | Except.error err => do
     IO.println s!"Error parsing JSON: {err}"
@@ -131,12 +138,45 @@ def get_ledger_from_json_string (s : String) : Except String Ledger := do
   let ledger ← fromJson? j
   pure ledger
 
+def extractKey (method : String) (params : Json) : String :=
+  match method with
+  | "getSignaturesForAddress" =>
+    match params with
+    --| Json.arr #[Json.str address, Json.mkObj obj] =>
+--      match obj.find? "limit" with
+--      | some (Json.num limit) => s!"method:{method}_address:{address}_limit:{limit}"
+      --| _ => s!"method:{method}_address:{address}"
+    | Json.arr #[Json.str address, _] =>
+      s!"method_{method}_address_{address}"
+    | _ =>
+      s!"method_{method}_unknown"
+  | "getTransaction" =>
+    match params with
+    --| Json.arr #[Json.str signature, Json.mkObj _] =>
+--      s!"method:{method}_signature:{signature}"
+    | Json.arr #[Json.str signature, _] =>
+      s!"method_{method}_signature_{signature}"
+    | _ =>
+      s!"method_{method}_unknown"
+  | "getAccountInfo" =>
+    match params with
+    --| Json.arr #[Json.str address, Json.mkObj _] =>
+--      s!"method:{method}_address:{address}"
+    | Json.arr #[Json.str address, _] =>
+      s!"method_{method}_address_{address}"
+    | _ =>
+      s!"method_{method}_unknown"
+  | _ =>
+    s!"method_{method}_unknown"
+
 -- Execute curl for Solana RPC with caching
 def callSolanaRpc (method : String) (params : Json) : IO (Except String Json) := do
-  let cacheKey := generateCacheKey method params
+  let keyName := ( extractKey method params)
+  IO.println s!"keyName: {keyName}"
+  let cacheKey := generateCacheKey  keyName params
   match (← checkCache cacheKey) with
   | some cachedContent =>
-    IO.println s!"Using cached result for {method}"
+    IO.println s!"Using cached result for {method} {cacheKey}"
     match Json.parse cachedContent with
     | Except.ok json => pure (Except.ok json)
     | Except.error err => pure (Except.error s!"JSON parsing failed for cached content: {err}")
@@ -297,12 +337,13 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except Strin
     IO.println s!"debug, {(json2.pretty).length}"
     let res <- getTransactionSignaturesDetails json2
 
-    --IO.println s!"debug, {res}"
+
     match res with
     | Except.ok details =>
       IO.println s!"Transaction details: {details}"
       pure (Except.ok [""]) -- Placeholder for actual return value
     | Except.error err =>
+      IO.println s!"debug, {res}"
       IO.println s!"Error retrieving transaction details: {err}"
       pure (Except.error err)
     --let food := proc2 json2
@@ -483,11 +524,11 @@ def getTransactionDetails (signature : Signature) : IO (Except String Transactio
     IO.println s!"Got transaction details response {(json.pretty 2).length}"
     IO.println s!"Got transaction details response "
     -- For simplicity, returning a default TransactionDetails
-    let details := TransactionDetails.mk
-      signature, 0, 0, none, none, "finalized"
+    --let details := TransactionDetails.mk signature, 0, 0, none, none, "finalized"
 
     -- "signature", 0, 0, none, none, "finalized"
-    pure (Except.ok details)
+    --pure (Except.ok details)
+    pure (Except.error "WIP")
 
 -- Chunk ledger entries
 def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
@@ -516,18 +557,19 @@ def processWithLLM (tx : Json) : IO (Except String String) := do
   IO.FS.writeFile tempFile (tx.pretty 2)
 
   let outputFile := s!"{CACHE_DIR}/llm_output_{hash tx.compress}.txt"
-  let leanCode := s!"
-import Lean.Data.Json
+  let leanCode := "todo"
+--   let leanCode := s!"
+-- import Lean.Data.Json
 
-def main : IO Unit := do
-  let jsonStr ← IO.FS.readFile \"{tempFile}\"
-  match Json.parse jsonStr with
-  | Except.ok json =>
-    let summary := \"Processed chunk \" ++ json.getObjValD \\\"chunkId\\\".pretty 2 ++ \": \" ++ json.getObjValD \\\"data\\\".pretty 2
-    IO.FS.writeFile \"{outputFile}\" summary
-  | Except.error err =>
-    IO.FS.writeFile \"{outputFile}\" (\"Error: \" ++ err)
-"
+-- def main : IO Unit := do
+--   let jsonStr ← IO.FS.readFile \"{tempFile}\"
+--   match Json.parse jsonStr with
+--   | Except.ok json =>
+--     let summary := \"Processed chunk \" ++ json.getObjValD \\\"chunkId\\\".pretty 2 ++ \": \" ++ json.getObjValD \\\"data\\\".pretty 2
+--     IO.FS.writeFile \"{outputFile}\" summary
+--   | Except.error err =>
+--     IO.FS.writeFile \"{outputFile}\" (\"Error: \" ++ err)
+-- "
   let leanFile := s!"{CACHE_DIR}/temp_processor_{hash tx.compress}.lean"
   IO.FS.writeFile leanFile leanCode
   let result ← IO.Process.output {
