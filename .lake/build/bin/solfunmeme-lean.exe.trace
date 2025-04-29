@@ -1,0 +1,5 @@
+{"log":
+ [{"message":
+   ".> c:\\Users\\gentd\\.elan\\toolchains\\leanprover--lean4---v4.18.0\\bin\\clang.exe -o .\\.\\.lake\\build\\bin\\solfunmeme-lean.exe .\\.\\.lake\\build\\ir\\Main.c.o.noexport .\\.\\.lake\\build\\ir\\SolfunmemeLean\\Basic.c.o.noexport .\\.\\.lake\\build\\ir\\SolfunmemeLean.c.o.noexport --sysroot c:\\Users\\gentd\\.elan\\toolchains\\leanprover--lean4---v4.18.0 -L c:\\Users\\gentd\\.elan\\toolchains\\leanprover--lean4---v4.18.0/lib -Wl,-Bstatic -lgmp -luv -lpsapi -luser32 -ladvapi32 -liphlpapi -luserenv -lws2_32 -ldbghelp -lole32 -lshell32 -lunwind -Wl,-Bdynamic -fuse-ld=lld -L c:\\Users\\gentd\\.elan\\toolchains\\leanprover--lean4---v4.18.0\\lib\\lean -Wl,--start-group -lleancpp -lLean -Wl,--end-group -lStd -Wl,--start-group -lInit -lleanrt -Wl,--end-group -lc++ -lc++abi -lLake -lgmp -luv -lpsapi -luser32 -ladvapi32 -liphlpapi -luserenv -lws2_32 -ldbghelp -lole32 -lshell32 -lucrtbase -Wl,--stack,104857600 -licu -lm -lbcrypt -pthread",
+   "level": "trace"}],
+ "depHash": "12156102187713307313"}
