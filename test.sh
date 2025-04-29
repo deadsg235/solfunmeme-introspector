@@ -1,1 +1,2 @@
-curl -X POST -H "Content-Type: application/json" --data @test.json     "https://api.mainnet-beta.solana.com"
+#curl -X POST -H "Content-Type: application/json" --data @test.json     "https://api.mainnet-beta.solana.com"
+C:\Users\gentd\.elan\toolchains\leanprover--lean4---v4.18.0\bin\lean.exe --run .\SolfunmemeLean\getSolfunmeme.lean

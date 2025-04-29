@@ -53,11 +53,7 @@ structure TransactionDetails where
   --memo: Option String
   --err : Option String   TransactionDetails.err: String expected
   confirmationStatus : String -- "finalized",
-
-
 deriving ToJson, FromJson, Inhabited, Repr
-
-
 
 -- Structure for inner instructions
 structure InnerInstruction where
@@ -114,16 +110,16 @@ structure Instruction where
 
 -- Structure for message header
 structure MessageHeader where
-  numReadonlySignedAccounts : Nat
-  numReadonlyUnsignedAccounts : Nat
-  numRequiredSignatures : Nat
+  numReadonlySignedAccounts : Int
+  numReadonlyUnsignedAccounts : Int
+  numRequiredSignatures : Int
   deriving ToJson, FromJson, Inhabited
 
 -- Structure for message
 structure Message2 where
   accountKeys : List String
   addressTableLookups : List Json -- Empty in the example
-  header : MessageHeader
+  header  : MessageHeader
   instructions : List Instruction
   recentBlockhash : String
   deriving ToJson, FromJson, Inhabited
@@ -135,14 +131,33 @@ structure Transaction where
   deriving ToJson, FromJson, Inhabited
 
 -- Main TransactionDetails structure
-structure TransactionDetails2 where
-   signature : String -- Extracted from transaction.signatures[0]
-   blockTime : Nat
-   slot : Slot
-   memo : Option String -- Not present in JSON, so Option String
-   err : Option String -- From meta.err
-   confirmationStatus : String -- Inferred as "finalized"
-   deriving ToJson, FromJson, Inhabited
+-- structure TransactionDetails2 where
+--    signatures : List String -- Extracted from transaction.signatures[0]
+--    blockTime : Nat
+--    slot : Slot
+--    memo : Option String -- Not present in JSON, so Option String
+--    err : Option String -- From meta.err
+--    confirmationStatus : String -- Inferred as "finalized"
+--    deriving ToJson, FromJson, Inhabited
+
+structure TransactionDetailsResult where
+  version : Int -- 0.0.0
+  transaction : Transaction
+  slot : Int
+  meta : Meta2
+  blockTime :Int --// : UnixTimestamp
+  deriving ToJson, FromJson, Inhabited
+
+structure Error where
+    code : Int
+    message : String
+    deriving ToJson, FromJson, Inhabited
+
+structure TransactionDetailsResult2 where
+  result : Option TransactionDetailsResult
+  error : Option Error
+  deriving ToJson, FromJson, Inhabited
+  --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
 
 -- Function to convert JSON result to TransactionDetails
 -- def TransactionDetails.fromResult (result : Json) : Option TransactionDetails :=
@@ -299,6 +314,7 @@ def callSolanaRpc (method : String) (params : Json) : IO (Except String Json) :=
     | Except.error err => pure (Except.error s!"JSON parsing failed for cached content: {err}")
   | none =>
     IO.println s!"No cache found for {method}, making RPC call"
+    IO.sleep 400
     let payload := Json.mkObj [
       ("jsonrpc", Json.str "2.0"),
       ("id", Json.num 1),
@@ -310,23 +326,26 @@ def callSolanaRpc (method : String) (params : Json) : IO (Except String Json) :=
     IO.FS.createDirAll CACHE_DIR
     IO.FS.writeFile tempFileName (payload.pretty 2)
 
+    let url := (← IO.getEnv "SOLANA_URL").getD "https://api.mainnet-beta.solana.com"
+
     let result ← IO.Process.output {
       cmd := "curl",
+
       args := #[
         "-X", "POST",
         "-H", "Content-Type: application/json",
         "--data", s!"@{tempFileName}",
-        "https://api.mainnet-beta.solana.com"
+        url
       ]
     }
 
     -- Save response details for debugging
     let respFileName := s!"{CACHE_DIR}/temp_{cacheKey}_response.json"
-    IO.FS.writeFile respFileName result.stdout
+    IO.FS.writeFile respFileName (url ++ result.stdout )
 
     if !result.stderr.isEmpty then
       let errFileName := s!"{CACHE_DIR}/temp_{cacheKey}_error.txt"
-      IO.FS.writeFile errFileName result.stderr
+      IO.FS.writeFile errFileName (url ++ result.stderr)
 
     match Json.parse result.stdout with
     | Except.ok json =>
@@ -384,9 +403,10 @@ instance : ToString TransactionDetails2 where
 toString _ := s!"TransactionDetails2..."
 
 
-def getTransactionDetails (signature : Signature) : IO (Except String TransactionDetails) := do
+def getTransactionDetails (signature : Signature) : IO (Except String TransactionDetailsResult2) := do
   let params := Json.arr #[Json.str signature,  Json.mkObj [ ( "maxSupportedTransactionVersion", Json.num 0 ) ]]
     --("encoding", Json.str "jsonParsed")
+
 
   let response ← callSolanaRpc "getTransaction" params
   match response with
@@ -397,34 +417,27 @@ def getTransactionDetails (signature : Signature) : IO (Except String Transactio
     IO.println s!"Got transaction details response "
     -- For simplicity, returning a default TransactionDetails
     --let details := TransactionDetails.mk signature, 0, 0, none, none, "finalized"
-    IO.println s!"debug, {(json.pretty)}"
+    IO.println s!"debug1 ok, {(json.pretty).toSubstring.take 256 }"
     --let txd : TransactionDetails2  := fromJson? json
 
-    match fromJson?  json2 with
-    | Except.ok (details:TransactionDetails2) => do
+    match fromJson?  json with
+    | Except.ok (details:TransactionDetailsResult2) => do
       --  IO.println s!"TransactionDetails details: {resp}"
-      IO.println s!"debug txd, {(details)}"
-        IO.sleep 2000
-        return (Except.ok (resp))
+      IO.println s!"debug2 txd, {(details)}"
+
+      if details.error.isSome then
+        let err := details.error.get!
+        IO.println s!"Error in transaction details: {err.message}"
+        --sorry
+        return (Except.error s!"Error in transaction details: {err.message}")
+
+      return (Except.ok (details))
     | Except.error err => do
-      IO.println s!"Error parsing JSON: {err}"
+      IO.println s!"Error parsing JSON2: {err}"
+      --sorry
+      --IO.sleep 12000
+      return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
 
-        return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
-
-    --
-    --   match fromJson?  json2 with
-    --   | Except.ok (details:TransactionDetailsResp) => do
-    --     let resp  :List String := details.result.map getSig
-    --   --  IO.println s!"TransactionDetails details: {resp}"
-    --     return (Except.ok (resp))
-    -- | Except.error err => do
-      -- IO.println s!"Error parsing JSON: {err}"
-      --   return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
-
-
-    -- "signature", 0, 0, none, none, "finalized"
-    --pure (Except.ok details)
-    pure (Except.error "WIP")
 
 
 def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except String (List String)) := do
@@ -433,7 +446,7 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except Strin
   match response with
   | Except.error err => pure (Except.error err)
   | Except.ok json2 =>
-    IO.println s!"debug, {(json2.pretty).length}"
+    IO.println s!"debug2, {(json2.pretty).length}"
     let res <- getTransactionSignaturesDetails json2
     match res with
     | Except.ok details =>
@@ -497,11 +510,9 @@ def ProcessSignfun (sig:String) : IO Unit := do
       match txDetails with
       | Except.error err =>
         IO.println s!"Failed to fetch transaction details: {err}"
-        --raise
         pure ()
       | Except.ok details =>
         IO.println s!"Transaction Details fetched successfully \n{details}"
-
 
 -- Main function
 def SolfunmemeLean : IO Unit := do
