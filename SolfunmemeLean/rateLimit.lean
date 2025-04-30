@@ -141,26 +141,34 @@ instance : ToString SnapshotConfig where
   --     }
 
 -- Refresh tokens for an RPC/node
-def refreshTokens (addr : String) (state : RateLimitState) (currentTime : Nat) : RateLimitState :=
+-- (addr : String)
+def refreshTokens (state : RateLimitState) (currentTime : Nat) : RateLimitState :=
   let windowSeconds := 10000 -- 10 seconds in ms
   if currentTime >= state.lastResetRequests + windowSeconds
   then { state with requests := 0, tokens := 40, connectionRate := 0, lastResetRequests := currentTime }
   else if state.tokens < 40 then { state with tokens := Nat.min 40 (state.tokens + 1) } -- Gradual refill
   else state
 
+def foo1 state currentTime := refreshTokens state currentTime
+
 -- Refresh global tokens
---def refreshGlobalTokens (globalState : GlobalRateLimitState) (currentTime : Nat) : GlobalRateLimitState :=
---  let windowSeconds := 10000 -- 10 seconds in ms
-  -- if currentTime >= globalState.lastReset + windowSeconds
-  -- then {
-  --   -- globalState with totalRequests := 0,
-  --   --       totalTokens := 100,
-  --   --       lastReset := currentTime
-  --         --,
-  --         --rpcStates := globalState.rpcStates.map (fun (addr, state) => (addr, refreshTokens addr state currentTime))
-  --        }
-  -- else { globalState with totalTokens := Nat.min 100 (globalState.totalTokens + 1), -- Gradual refill
-  --        rpcStates := globalState.rpcStates.map (fun (addr, state) => (addr, refreshTokens addr state currentTime)) }
+def refreshGlobalTokens (globalState : GlobalRateLimitState) (currentTime : Nat) : GlobalRateLimitState :=
+
+  let states := globalState.rpcStates.map (fun (addr, state) => (addr, foo1 state currentTime))
+
+  let windowSeconds := 10000 -- 10 seconds in ms
+   if currentTime >= globalState.lastReset + windowSeconds
+   then
+
+      GlobalRateLimitState.mk 0 100 0 states
+   else
+     let tokens := Nat.min 100 (globalState.totalTokens + 1)
+
+     GlobalRateLimitState.mk tokens globalState.totalTokens globalState.lastReset states
+
+
+def addrfun (addr : String) : String × RateLimitState → Bool
+  | (a, _) => a = addr
 
 -- Check if a request is allowed
 def canMakeRequest (addr : String) (globalState : GlobalRateLimitState) (currentTime : Nat) : Bool × GlobalRateLimitState :=
@@ -168,14 +176,28 @@ def canMakeRequest (addr : String) (globalState : GlobalRateLimitState) (current
   let maxTotalRequests := 100
   let maxConnections := 40
   let maxConnectionRate := 40
-  --let globalState := refreshGlobalTokens globalState currentTime
-  let rpcStateOpt := globalState.rpcStates.find? (fun (a, _) => a = addr)
-  --let rpcState := rpcStateOpt.getD (addr, ⟨⟩) |>.snd
-  --let updatedRpcState := refreshTokens addr rpcState currentTime
-  -- let withinRpcLimits := updatedRpcState.requests < maxRequestsPerRpc &&
-  --                       updatedRpcState.tokens > 0 &&
-  --                       updatedRpcState.connections < maxConnections &&
-  --                       updatedRpcState.connectionRate < maxConnectionRate
+  let globalState1 := refreshGlobalTokens globalState currentTime
+  let rpcStateOpt := globalState.rpcStates.find? (addrfun addr)
+
+  let defaultState : RateLimitState := {
+    state := RequestState.Idle,
+    requests := 0,
+    tokens := 40,
+    connections := 0,
+    connectionRate := 0,
+    dataBytes := 0,
+    lastResetRequests := currentTime,
+    lastResetData := currentTime
+  }
+
+  let st := rpcStateOpt.getD (addr, defaultState)
+
+  let rpcState := st.snd
+  let updatedRpcState := refreshTokens rpcState currentTime
+  let withinRpcLimits := updatedRpcState.requests < maxRequestsPerRpc &&
+                        updatedRpcState.tokens > 0 &&
+                        updatedRpcState.connections < maxConnections &&
+                        updatedRpcState.connectionRate < maxConnectionRate
   let withinGlobalLimits := globalState.totalRequests < maxTotalRequests && globalState.totalTokens > 0
   --if withinRpcLimits && withinGlobalLimits
   -- then
