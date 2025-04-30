@@ -13,22 +13,22 @@ open Lean Json ToJson FromJson
 -- instance : ToString Pubkey where
 --   toString pk := pk.pubkey
 
-structure Entry where
-  entry_date : String -- ISO date or timestamp
-  description : String -- Transaction type or details
-deriving ToJson, FromJson, Inhabited, Repr
+-- structure Entry where
+--   entry_date : String -- ISO date or timestamp
+--   description : String -- Transaction type or details
+-- deriving ToJson, FromJson, Inhabited, Repr
 
-instance : ToString Entry where
-  toString e := s!"Entry(date: {e.entry_date}, description: {e.description})"
+-- instance : ToString Entry where
+--   toString e := s!"Entry(date: {e.entry_date}, description: {e.description})"
 
-structure Ledger where
-  account_name : String -- Token metadata (e.g., mint details)
-  account_number : String -- Token address
-  entries : Array Entry
-deriving ToJson, FromJson, Inhabited, Repr
+-- structure Ledger where
+--   account_name : String -- Token metadata (e.g., mint details)
+--   account_number : String -- Token address
+--   entries : Array Entry
+-- deriving ToJson, FromJson, Inhabited, Repr
 
-instance : ToString Ledger where
-  toString l := s!"Ledger(account_name: {l.account_name}, account_number: {l.account_number}, entries: {l.entries})"
+-- instance : ToString Ledger where
+--   toString l := s!"Ledger(account_name: {l.account_name}, account_number: {l.account_number}, entries: {l.entries})"
 
 def Signature := String
 deriving ToJson, FromJson, Inhabited, Repr, ToString
@@ -265,10 +265,10 @@ def saveToCache (cacheKey : String) (content : String) : IO Unit := do
     IO.println s!"Failed to save cache: {e.toString}"
 
 -- JSON parsing for ledger
-def get_ledger_from_json_string (s : String) : Except String Ledger := do
-  let j ← Json.parse s
-  let ledger ← fromJson? j
-  pure ledger
+-- def get_ledger_from_json_string (s : String) : Except String Ledger := do
+--   let j ← Json.parse s
+--   let ledger ← fromJson? j
+--   pure ledger
 
 def extractKey (method : String) (params : Json) : String :=
   match method with
@@ -438,10 +438,20 @@ def getTransactionDetails (signature : Signature) : IO (Except String Transactio
       --IO.sleep 12000
       return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
 
+def getTransactionSignaturesBefore (limit : Nat)(before: Except String String) : Lean.Json :=
+  let obj := Json.mkObj [ ("limit", Json.num limit)]
+  match before with
+    | .error _ => obj
+    | .ok beforeValue => Json.mkObj [
+      ("limit", Json.num limit),
+      ("before", Json.str beforeValue)
+    ]
 
+def getTransactionSignatures (address : Pubkey) (limit : Nat)
+(before: Except String String) : IO (Except String (List String)) := do
+  let args  := getTransactionSignaturesBefore limit before
+  let params := Json.arr #[Json.str address, args]
 
-def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except String (List String)) := do
-  let params := Json.arr #[Json.str address, Json.mkObj [("limit", Json.num limit)]]
   let response ← callSolanaRpc "getSignaturesForAddress" params
   match response with
   | Except.error err => pure (Except.error err)
@@ -458,14 +468,14 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) : IO (Except Strin
       pure (Except.error err)
 
 -- Chunk ledger entries
-def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
-  let mut chunks : List (Nat × Array Entry) := []
-  let mut id : Nat := 0
-  for i in [:ledger.entries.size:CHUNK_SIZE] do
-    let chunk := ledger.entries.extract i (i + CHUNK_SIZE)
-    chunks := (id, chunk) :: chunks
-    id := id + 1
-  chunks.reverse
+-- def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
+--   let mut chunks : List (Nat × Array Entry) := []
+--   let mut id : Nat := 0
+--   for i in [:ledger.entries.size:CHUNK_SIZE] do
+--     let chunk := ledger.entries.extract i (i + CHUNK_SIZE)
+--     chunks := (id, chunk) :: chunks
+--     id := id + 1
+--   chunks.reverse
 
 def processWithLLM (tx : Json) : IO (Except String String) := do
   let cachePath := s!"{CACHE_DIR}/llm_process_{hash tx.compress}.txt"
@@ -514,6 +524,21 @@ def ProcessSignfun (sig:String) : IO Unit := do
       | Except.ok details =>
         IO.println s!"Transaction Details fetched successfully \n{details}"
 
+def firstTransactionSignature (address : Pubkey) : IO (Except String String) := do
+  --  check cache
+  let outputFile := s!"method_getSignaturesForAddress_address_{address}"
+  IO.println s!"outputFile: {outputFile}"
+  let output:String ← IO.FS.readFile outputFile
+  IO.println s!"output: {output}"
+  --let j ← Json.parse output
+  --let ledger ← fromJson? j
+  --let keyName := ( extractKey "getSignaturesForAddress" params)
+  -- IO.println s!"keyName: {keyName}"
+  -- let cacheKey := generateCacheKey  keyName params
+  -- match (← checkCache cacheKey) with
+
+  pure (Except.error "Not implemented yet")
+
 -- Main function
 def SolfunmemeLean : IO Unit := do
   IO.println s!"Introspecting token: {TOKEN_ADDRESS}"
@@ -534,7 +559,10 @@ def SolfunmemeLean : IO Unit := do
 
     -- Get transactions
     IO.println "Fetching transaction signatures..."
-    let txSignatures ← getTransactionSignatures TOKEN_ADDRESS 1000  -- Limited to 10 for testing
+
+    let findFirstTransaction : Except String String ← firstTransactionSignature TOKEN_ADDRESS
+
+    let txSignatures ← getTransactionSignatures TOKEN_ADDRESS 1000 findFirstTransaction -- Limited to 10 for testing
     match txSignatures with
     | Except.error err =>
       IO.println s!"Failed to fetch transactions: {err}"

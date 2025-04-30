@@ -276,3 +276,9 @@ and it too large to fit into register r, context C,
 mind M in full detail. 
 
 elephant metaphor.
+
+# recap
+1. Its not easy or obvious to download transactions from solana. opportunity. 
+API, free apis. 
+
+
