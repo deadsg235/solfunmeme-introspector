@@ -347,8 +347,8 @@ def callSolanaRpc (method : String) (params : Json ) (cacheKey:String) : IO (Exc
         url
       ]
     }
-    IO.println s!"RPC call result: {result.stdout}"
-    IO.println s!"RPC call result: {result.stderr}"
+--    IO.println s!"RPC call result: {result.stdout}"
+    --IO.println s!"RPC call result: {result.stderr}"
     --IO.FS.removeFile tempFileName
     pure (Except.ok result.stdout)
 
