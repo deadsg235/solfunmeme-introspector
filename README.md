@@ -296,3 +296,8 @@ you can  then mint your personal member badge to trade on new v2 token.
 send money to new v2 contract to buy your personal member badge.
 it could publish X attributes the you to share publically or not.
 say you have a new hidden wallet, mint a nft with it, and prove you are a member without revealing exactly your address.
+
+dao will be encoded into smart contracts
+off chain verfications and (running agents/eliza using llm resources) will be accessed and proven via zkp
+
+social wallet credit score - anti rug
