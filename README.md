@@ -282,3 +282,17 @@ elephant metaphor.
 API, free apis. 
 
 
+# 
+
+1. compile all transactions from coin A
+2. pull all the blocks
+get all account mentioned or needed.
+1.1. collect history of other accounts (possible)
+3. host our own sidechain for that coin
+4. pull recent snaphot and cutout all accounts mentioned.
+subgraph of solana centered around our coin. 
+5. airdrop cnft to all accounts, new contract, member token.
+you can  then mint your personal member badge to trade on new v2 token.
+send money to new v2 contract to buy your personal member badge.
+it could publish X attributes the you to share publically or not.
+say you have a new hidden wallet, mint a nft with it, and prove you are a member without revealing exactly your address.

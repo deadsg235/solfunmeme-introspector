@@ -69,19 +69,34 @@ instance : OfNat Slot n where
 --    "blockTime":
 --    1736996132},
 
-structure TransactionError where
-  code : Nat
-  message : String
-  deriving ToJson, FromJson, Inhabited, Repr
+structure CustomError where
+  Custom : Nat
+deriving ToJson, FromJson, Inhabited, Repr
+
+--structure InstructionError where
+--  index : Nat
+--  customCode : Nat
+--deriving ToJson, FromJson, Inhabited, Repr
+
+
+inductive TransactionError where
+  | InstructionError : Json -> TransactionError
+  --| AccountInUse
+  --| InvalidAccountData
+deriving ToJson, FromJson, Inhabited
+
 structure TransactionDetails where
   signature : String
   blockTime : Nat
   slot : Slot
   --memo: Option String
-  --err : Option String
+  memo : Option String
+
   --TransactionDetails.err: String expected
+  err : Option Json
   confirmationStatus : String -- "finalized",
-deriving ToJson, FromJson, Inhabited, Repr
+
+deriving ToJson, FromJson, Inhabited --, Repr
 
 -- Structure for inner instructions
 structure InnerInstruction where
@@ -220,43 +235,45 @@ structure TransactionDetailsResult2 where
 
 structure TransactionDetailsResp where
   result : List TransactionDetails
-  deriving ToJson, FromJson, Inhabited, Repr
+  deriving ToJson, FromJson, Inhabited
+  --, Repr
   --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
 
 def getSig (td:TransactionDetails) := td.signature
 
--- def good (td:TransactionDetails) : Bool :=
---   match td.err with
---   | none => true
---   | some _ => false
+def good (td:TransactionDetails) : Bool :=
+  match td.err with
+  | none => true
+  | some _ => false
 -- recursive function to get the signature from the transaction details
-def getTransactionSignaturesDetails (json2: Json) : IO (Except String (List String)) := do
+def getTransactionSignaturesDetails (json2: Json) : IO (Except String (TransactionDetailsResp)) := do
 
   --IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
   match fromJson?  json2 with
   | Except.ok (details:TransactionDetailsResp) => do
-      let firstT := details.result[0]?
+      --let firstT := details.result[0]?
       --let goodList  := details.result.filter good
-      let resp  :List String := details.result.map getSig
-      match firstT with
-      | none => do
-        IO.println s!"Error: No transaction details found"
-        return (Except.error s!"Error: No transaction details found")
-      | some firstT =>
-        --IO.println s!"TransactionDetails details: {resp}"
-        --IO.println s!"TransactionDetails details: {firstT}"
-        let secs :Std.Time.Second.Offset := Std.Time.Second.Offset.ofNat firstT.blockTime
-        let timestampVal  := Std.Time.Timestamp.ofSecondsSinceUnixEpoch secs
-        let dt := Std.Time.DateTime.ofTimestamp timestampVal Std.Time.TimeZone.GMT
-        let year := dt.year
-        let mon := dt.month
-        let day := dt.day
-        let hour := dt.hour.toInt
-        let minute := dt.minute.toInt
-        IO.println s!"TransactionDetails details: {year} {mon.toInt} {day.toInt} {hour} {minute}"
+      --IO.println s!"found {goodList.length} good transactions"
+    --let resp  :List String :=  details.result.map getSig
+      -- match firstT with
+      -- | none => do
+      --   IO.println s!"Error: No transaction details found"
+      --   return (Except.error s!"Error: No transaction details found")
+      -- | some firstT =>
+      --   --IO.println s!"TransactionDetails details: {resp}"
+      --   --IO.println s!"TransactionDetails details: {firstT}"
+      --   let secs :Std.Time.Second.Offset := Std.Time.Second.Offset.ofNat firstT.blockTime
+      --   let timestampVal  := Std.Time.Timestamp.ofSecondsSinceUnixEpoch secs
+      --   let dt := Std.Time.DateTime.ofTimestamp timestampVal Std.Time.TimeZone.GMT
+      --   let year := dt.year
+      --   let mon := dt.month
+      --   let day := dt.day
+      --   let hour := dt.hour.toInt
+      --   let minute := dt.minute.toInt
+      --   IO.println s!"TransactionDetails details: {year} {mon.toInt} {day.toInt} {hour} {minute}"
 
     --  IO.println s!"TransactionDetails details: {resp}"
-      return (Except.ok (resp))
+      return (Except.ok (details))
   | Except.error err => do
     IO.println s!"Error parsing JSON: {err}"
       return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
@@ -312,20 +329,6 @@ def checkCache (cacheKey : String) : IO (Option String) := do
   else
     pure none
 
--- Save response to cache
-def saveToCache (cacheKey : String) (content : String) : IO Unit := do
-  try
-    IO.FS.createDirAll CACHE_DIR
-    let cacheFile := s!"{CACHE_DIR}/{cacheKey}.json"
-    IO.FS.writeFile cacheFile content
-  catch e =>
-    IO.println s!"Failed to save cache: {e.toString}"
-
--- JSON parsing for ledger
--- def get_ledger_from_json_string (s : String) : Except String Ledger := do
---   let j ← Json.parse s
---   let ledger ← fromJson? j
---   pure ledger
 
 def extractKey (method : String) (params : Json) : String :=
   match method with
@@ -363,7 +366,7 @@ def prepareCallSolanaRpc (method : String) (params : Json) :  String :=
   generateCacheKey  keyName params
 
 -- Execute curl for Solana RPC with caching
-def callSolanaRpc (method : String) (params : Json ) (cacheKey:String) : IO (Except String String ) := do
+def callSolanaRpc (_method : String) (_params : Json ) (cacheKey:String) : IO (Except String String ) := do
 
   match (← checkCache cacheKey) with
   | some cachedContent =>
@@ -373,35 +376,7 @@ def callSolanaRpc (method : String) (params : Json ) (cacheKey:String) : IO (Exc
     --| Except.ok json => pure (Except.ok json)
     --| Except.error err => pure (Except.error s!"JSON parsing failed for cached content: {err}")
   | none =>
-    IO.println s!"No cache found for {method} {cacheKey}, making RPC call"
-    IO.sleep 5000
-    let payload := Json.mkObj [
-      ("jsonrpc", Json.str "2.0"),
-      ("id", Json.num 1),
-      ("method", Json.str method),
-      ("params", params)
-    ]
-
-    let tempFileName := s!"{CACHE_DIR}/temp_{cacheKey}_request.json"
-    IO.FS.createDirAll CACHE_DIR
-    IO.FS.writeFile tempFileName (payload.pretty 2)
-
-    let url := (← IO.getEnv "SOLANA_URL").getD "https://api.mainnet-beta.solana.com"
-
-    let result ← IO.Process.output {
-      cmd := "curl",
-
-      args := #[
-        "-X", "POST",
-        "-H", "Content-Type: application/json",
-        "--data", s!"@{tempFileName}",
-        url
-      ]
-    }
---    IO.println s!"RPC call result: {result.stdout}"
-    --IO.println s!"RPC call result: {result.stderr}"
-    --IO.FS.removeFile tempFileName
-    pure (Except.ok result.stdout)
+    pure (Except.error ("Missing:" ++ cacheKey))
 
 def prepareSaveRPC (_method : String) (result: String) : IO (Except String Json) := do
     match Json.parse result with
@@ -433,7 +408,7 @@ def getTokenInfo (address : Pubkey) : IO (Except String TokenInfo) := do
         --let prettyJson := ajson.pretty 2
         --IO.println s!"Got token info response, processing... "
       --IO.println s!"Got token info response, processing. {prettyJson.length}"
-      saveToCache cacheKey (ajson.pretty 2)
+      --saveToCache cacheKey (ajson.pretty 2)
       let supply := 0
       let decimals := 0
       let mintAuthority := none
@@ -519,10 +494,13 @@ def getTransactionSignaturesBefore (limit : Nat)(before: Option String) : Lean.J
         ("before", Json.str beforeValue)
       ]
 
-def firstTransactionSignature (details : List String) : String :=
-  match (List.getLast? details) with
-    | none => ""
-    | some x => x -- Return the first signature
+def firstTransactionSignature (details : TransactionDetailsResp ) : String :=
+  details.result.getLast? |>.get!.signature -- Get the last element of the list
+
+  -- match details with
+  --match (List.getLast? details) with
+--    | none => ""
+    --| some x => x -- Return the first signature
   -- match details with
   -- | [] => ""
   -- | x :: b => b -- Return the first signature
@@ -532,7 +510,7 @@ def firstTransactionSignature (details : List String) : String :=
 --def recurseTransactions (ajson)(cacheKey) := do
 
 
-def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option String): IO (Except String (List String)) := do
+def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option String): IO (Except String (TransactionDetailsResp )) := do
   let name := "getSignaturesForAddress"
 
   --let before := Except.error "No previous signature"
@@ -557,7 +535,7 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option S
           --let firstSig := firstTransactionSignature details
           --let ajson ← saveRPC name params astr
           --IO.println s!"Transaction details: {details.length} {firstSig}"
-          saveToCache (cacheKey) (ajson.pretty 2)
+          --saveToCache (cacheKey) (ajson.pretty 2)
           --firstSig.toSubstring.take 10
           --saveToCache ("txn_"++firstSig) (ajson.pretty 2)
           --saveToCache ("txn_"++firstSig) (ajson.pretty 2)
@@ -568,52 +546,7 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option S
           pure (Except.error err)
       --00pure (Except.error "TODO")
 
--- Chunk ledger entries
--- def chunkEntries (ledger : Ledger) : List (Nat × Array Entry) := Id.run do
---   let mut chunks : List (Nat × Array Entry) := []
---   let mut id : Nat := 0
---   for i in [:ledger.entries.size:CHUNK_SIZE] do
---     let chunk := ledger.entries.extract i (i + CHUNK_SIZE)
---     chunks := (id, chunk) :: chunks
---     id := id + 1
---   chunks.reverse
 
-def processWithLLM (tx : Json) : IO (Except String String) := do
-  let cachePath := s!"{CACHE_DIR}/llm_process_{hash tx.compress}.txt"
-
-  -- Check if we have a cached LLM result
-  if (← System.FilePath.pathExists cachePath) then
-    try
-      let cachedOutput ← IO.FS.readFile cachePath
-      IO.println "Using cached LLM processing result"
-      return Except.ok cachedOutput
-    catch _ =>
-      IO.println "Failed to read cached LLM result, processing again"
-
-  let tempFile := s!"{CACHE_DIR}/llm_input_{hash tx.compress}.json"
-  IO.FS.createDirAll CACHE_DIR
-  IO.FS.writeFile tempFile (tx.pretty 2)
-
-  let outputFile := s!"{CACHE_DIR}/llm_output_{hash tx.compress}.txt"
-  let leanCode := "todo"
-
-  let leanFile := s!"{CACHE_DIR}/temp_processor_{hash tx.compress}.lean"
-  IO.FS.writeFile leanFile leanCode
-  let result ← IO.Process.output {
-    cmd := "lean",
-    args := #["--run", leanFile]
-  }
-
-  if !result.stderr.isEmpty then
-    IO.println s!"LLM Processing Error:\n{result.stderr}"
-
-  try
-    let output ← IO.FS.readFile outputFile
-    -- Cache the LLM processing result
-    IO.FS.writeFile cachePath output
-    pure (Except.ok output)
-  catch e =>
-    pure (Except.error s!"Failed to read LLM output: {e.toString}")
 
 def ProcessSignfun (sig:String) : IO Unit := do
       IO.println s!"Processing transaction signature: {sig}"
@@ -625,37 +558,6 @@ def ProcessSignfun (sig:String) : IO Unit := do
       | Except.ok details =>
         IO.println s!"Transaction Details fetched successfully \n{details}"
 
--- def firstTransactionSignature (address : Pubkey) : IO (Except String String) := do
---   --  check cache
---   let outputFile := s!"method_getSignaturesForAddress_address_{address}"
---   IO.println s!"outputFile: {outputFile}"
---   let output:String ← IO.FS.readFile outputFile
---   IO.println s!"output: {output}"
---   --let j ← Json.parse output
---   --let ledger ← fromJson? j
---   --let keyName := ( extractKey "getSignaturesForAddress" params)
---   -- IO.println s!"keyName: {keyName}"
---   -- let cacheKey := generateCacheKey  keyName params
---   -- match (← checkCache cacheKey) with
-
---   pure (Except.error "Not implemented yet")
-
--- def fetchSignaturesLoop1 (tokenAddress : String) (limit : Nat) (cursor : Option String) : IO Unit := do
---   IO.println s!"Fetching transaction signatures for {tokenAddress} with limit {limit} and cursor {cursor}"
---   let txSignatures ← getTransactionSignatures tokenAddress limit cursor
---   match txSignatures with
---   | Except.error err =>
---     IO.println s!"Failed to fetch transactions: {err}"
---     pure ()
---   | Except.ok txs =>
---     IO.println s!"Fetched {txs.length} transaction signatures"
---     if txs.isEmpty then
---       IO.println "No more transactions found."
---       pure ()
---     else
---       let firstSig := firstTransactionSignature txs
---       IO.println s!"First transaction signature: {firstSig}"
---       fetchSignaturesLoop1 tokenAddress limit (some firstSig)
   --termination_by fetchSignaturesLoop cursor
 def fetchSignaturesLoop (tokenAddress : String) (limit : Nat) (cursor : Option String) (maxBatches : Nat) : IO Unit := do
   if maxBatches = 0 then
@@ -669,12 +571,12 @@ def fetchSignaturesLoop (tokenAddress : String) (limit : Nat) (cursor : Option S
       pure ()
     | Except.ok txs =>
       --IO.println s!"Fetched {txs.length} transaction signatures"
-      if txs.isEmpty then
-        IO.println "No more transactions found."
-        pure ()
-      else
+      --if txs.isEmpty then
+--        IO.println "No more transactions found."
+        --pure ()
+      --else
         let firstSig := firstTransactionSignature txs
-        --IO.println s!"First transaction signature: {firstSig}"
+        IO.println s!"Loop First transaction signature: {firstSig}"
 
         fetchSignaturesLoop tokenAddress limit (some firstSig) (maxBatches - 1)
   termination_by maxBatches
@@ -701,24 +603,7 @@ def SolfunmemeLean : IO Unit := do
     -- Get transactions
     IO.println "Fetching transaction signatures..."
 
-    --let findFirstTransaction : Except String String ← firstTransactionSignature TOKEN_ADDRESS
 
-    -- let txSignatures ← getTransactionSignatures TOKEN_ADDRESS 1000 none -- Limited to 10 for testing
-    -- match txSignatures with
-    -- | Except.error err =>
-    --   IO.println s!"Failed to fetch transactions: {err}"
-    --   pure ()
-    -- | Except.ok txs =>
-    --   IO.println s!"Successfully fetched transaction signatures"
-
-    --   if txs.isEmpty then
-    --     IO.println "No transactions found."
-    --     pure ()
-    --   else
-    --     let firstSig := firstTransactionSignature txs
-    --     IO.println s!"First transaction signature: {firstSig}"
-    --     let txSignatures2 ← getTransactionSignatures TOKEN_ADDRESS 1000 firstSig
-    --     IO.println s!"txSignatures2 signature: {txSignatures2}"
 
 --    fetchSignaturesLoop TOKEN_ADDRESS 1000 none
       -- Entry point
