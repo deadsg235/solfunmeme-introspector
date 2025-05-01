@@ -4,6 +4,13 @@ import Lean
 import Lean.Data.Json.Basic
 import Lean.Data.Json.Parser
 import Lean.Data.Json.Printer
+import Std.Time.Internal
+import Std.Time.Time
+import Std.Time
+import Std.Time.Date
+
+import Std.Time.Time.Unit.Second
+import Std.Time.DateTime.Timestamp
 open Lean Json ToJson FromJson
 
 -- structure Pubkey where
@@ -203,7 +210,25 @@ def getTransactionSignaturesDetails (json2: Json) : IO (Except String (List Stri
   --IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
   match fromJson?  json2 with
   | Except.ok (details:TransactionDetailsResp) => do
+      let firstT := details.result.get? 0
       let resp  :List String := details.result.map getSig
+      match firstT with
+      | none => do
+        IO.println s!"Error: No transaction details found"
+        return (Except.error s!"Error: No transaction details found")
+      | some firstT =>
+        --IO.println s!"TransactionDetails details: {resp}"
+        --IO.println s!"TransactionDetails details: {firstT}"
+        let secs :Std.Time.Second.Offset := Std.Time.Second.Offset.ofNat firstT.blockTime
+        let timestampVal  := Std.Time.Timestamp.ofSecondsSinceUnixEpoch secs
+        let dt := Std.Time.DateTime.ofTimestamp timestampVal Std.Time.TimeZone.GMT
+        let year := dt.year
+        let mon := dt.month
+        let day := dt.day
+        let hour := dt.hour.toInt
+        let minute := dt.minute.toInt
+        IO.println s!"TransactionDetails details: {year} {mon.toInt} {day.toInt} {hour} {minute}"
+
     --  IO.println s!"TransactionDetails details: {resp}"
       return (Except.ok (resp))
   | Except.error err => do
@@ -316,7 +341,7 @@ def callSolanaRpc (method : String) (params : Json ) (cacheKey:String) : IO (Exc
 
   match (← checkCache cacheKey) with
   | some cachedContent =>
-    IO.println s!"Using cached result for {method} {cacheKey}"
+    --IO.println s!"Using cached result for {method} {cacheKey}"
     pure (Except.ok cachedContent)
     --match Json.parse cachedContent with
     --| Except.ok json => pure (Except.ok json)
@@ -355,10 +380,10 @@ def callSolanaRpc (method : String) (params : Json ) (cacheKey:String) : IO (Exc
 def prepareSaveRPC (method : String) (result: String) : IO (Except String Json) := do
     match Json.parse result with
     | Except.ok json =>
-      IO.println s!"Received response for {method}"
+      --IO.println s!"Received response for {method}"
       pure (Except.ok json)
     | Except.error err =>
-      pure (Except.error s!"JSON parsing failed: {err}")
+      pure (Except.error s!"JSON parsing failed: {err} {result}")
 
 --def saveRPC (method : String) (params : Json) (result: String) : IO (Except String Json) := do
        --let cacheKey := generateContentCacheKey method params json
@@ -496,7 +521,7 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option S
     match ajson with
     | Except.error err => pure (Except.error err)
     | Except.ok ajson =>
-      IO.println s!"debug2, {(ajson.pretty).length}"
+      --IO.println s!"debug2, {(ajson.pretty).length}"
 
       -- recurseTransactions(ajson)
       let res ← getTransactionSignaturesDetails ajson
@@ -505,7 +530,7 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option S
         -- now we use the earlist signature to get the transaction details
           let firstSig := firstTransactionSignature details
           --let ajson ← saveRPC name params astr
-          IO.println s!"Transaction details: {details.length} {firstSig}"
+          --IO.println s!"Transaction details: {details.length} {firstSig}"
           saveToCache (cacheKey) (ajson.pretty 2)
           --firstSig.toSubstring.take 10
           --saveToCache ("txn_"++firstSig) (ajson.pretty 2)
@@ -617,13 +642,13 @@ def fetchSignaturesLoop (tokenAddress : String) (limit : Nat) (cursor : Option S
       IO.println s!"Failed to fetch transactions: {err}"
       pure ()
     | Except.ok txs =>
-      IO.println s!"Fetched {txs.length} transaction signatures"
+      --IO.println s!"Fetched {txs.length} transaction signatures"
       if txs.isEmpty then
         IO.println "No more transactions found."
         pure ()
       else
         let firstSig := firstTransactionSignature txs
-        IO.println s!"First transaction signature: {firstSig}"
+        --IO.println s!"First transaction signature: {firstSig}"
 
         fetchSignaturesLoop tokenAddress limit (some firstSig) (maxBatches - 1)
   termination_by maxBatches
@@ -671,8 +696,8 @@ def SolfunmemeLean : IO Unit := do
 
 --    fetchSignaturesLoop TOKEN_ADDRESS 1000 none
       -- Entry point
-      let maxBatches := 1000 -- Arbitrary limit, adjust as needed
-      let txSignatures ← fetchSignaturesLoop TOKEN_ADDRESS 1000 none maxBatches -- Limited to 10 signatures per batch
+      let maxBatches := 20000 -- Arbitrary limit, adjust as needed
+      let txSignatures ← fetchSignaturesLoop TOKEN_ADDRESS 1000 none maxBatches
       IO.println s!"Done processing token {txSignatures}"
       --pure ()
 
