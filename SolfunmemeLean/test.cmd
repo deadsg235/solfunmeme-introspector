@@ -1,0 +1,2 @@
+
+curl -X POST -H "Content-Type: application/json" --data @temp_method_getSignaturesForAddress_address_BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump_12795901657040069790_request.json https://api.mainnet-beta.solana.com
