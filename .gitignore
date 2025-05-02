@@ -3,6 +3,4 @@ temp_*
 SolfunmemeLean/.env
 
 SolfunmemeLean/.env2.txt
-.lake/*
-.lake/build/ir/SolfunmemeLean/*
-.lake/build/lib/lean/SolfunmemeLean/*
+.lake/**    
