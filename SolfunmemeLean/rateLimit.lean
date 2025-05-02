@@ -469,6 +469,7 @@ def SolfunmemeLean : IO Unit := do
      wildcardVersion := some "1.10" -- Match known nodes' versions
    }
    let snapshotResult ← findSnapshot config
+  IO.println s!"Snapshot finder result: {snapshotResult}"
 --   match snapshotResult with
 --   | Except.ok _ => IO.println "Snapshot finder completed successfully"
 --   | Except.error err => IO.println s!"Snapshot finder failed: {err}"

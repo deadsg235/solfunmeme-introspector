@@ -1,4 +1,5 @@
---getSolfunmeme.lean
+import SolfunmemeLean.Common
+-- This file contains environment variables for the SolfunmemeLean project.
 import Lean.Data.Json
 import Lean
 import Lean.Data.Json.Basic
@@ -8,249 +9,19 @@ import Std.Time.Internal
 import Std.Time.Time
 import Std.Time
 import Std.Time.Date
-
 import Std.Time.Time.Unit.Second
 import Std.Time.DateTime.Timestamp
+open SolfunmemeLean.Common
 open Lean Json ToJson FromJson
 
--- structure Pubkey where
---   pubkey : String
--- deriving ToJson, FromJson, Inhabited, Repr
-
--- instance : ToString Pubkey where
---   toString pk := pk.pubkey
-
--- structure Entry where
---   entry_date : String -- ISO date or timestamp
---   description : String -- Transaction type or details
--- deriving ToJson, FromJson, Inhabited, Repr
-
--- instance : ToString Entry where
---   toString e := s!"Entry(date: {e.entry_date}, description: {e.description})"
-
--- structure Ledger where
---   account_name : String -- Token metadata (e.g., mint details)
---   account_number : String -- Token address
---   entries : Array Entry
--- deriving ToJson, FromJson, Inhabited, Repr
-
--- instance : ToString Ledger where
---   toString l := s!"Ledger(account_name: {l.account_name}, account_number: {l.account_number}, entries: {l.entries})"
-
-def Signature := String
-deriving ToJson, FromJson, Inhabited, Repr, ToString
-
-def Slot := Nat
-deriving ToJson, FromJson, Inhabited, Repr, ToString, ToString
-
-instance : OfNat Slot n where
-  ofNat := n
-
---{"jsonrpc":"2.0","result":[
---{"blockTime":1745839669,
---"confirmationStatus":"finalized",
---"err":null,
---"memo":null,
---"signature":"2pozgVUc8vbGLeDWAhriwuv7zitKx3GFDmc7TrQEg3saqET18tuxo3ut7HVNQxoCzpXWnjzYN3u9CF5dGSXZG2Tc",
-
---  [{"slot":
---    314278210,
---    "signature":
---    "4R7qTtTUArspBJ7oE1kjGExKTB8LSSJY5GqBeCMBxr7hMRjejKF2ULCbUgA6r7WYa7sE5ije15evfnRrHRQsQG4a",
---    "memo":
---    null,
---    "err":
---    {"InstructionError":
---     [2,
---      {"Custom":
---       6001}]},
---    "confirmationStatus":
---    "finalized",
---    "blockTime":
---    1736996132},
-
-structure CustomError where
-  Custom : Nat
-deriving ToJson, FromJson, Inhabited, Repr
-
---structure InstructionError where
---  index : Nat
---  customCode : Nat
---deriving ToJson, FromJson, Inhabited, Repr
 
 
-inductive TransactionError where
-  | InstructionError : Json -> TransactionError
-  --| AccountInUse
-  --| InvalidAccountData
-deriving ToJson, FromJson, Inhabited
-
-structure TransactionDetails where
-  signature : String
-  blockTime : Nat
-  slot : Slot
-  --memo: Option String
-  memo : Option String
-
-  --TransactionDetails.err: String expected
-  err : Option Json
-  confirmationStatus : String -- "finalized",
-
-deriving ToJson, FromJson, Inhabited --, Repr
-
--- Structure for inner instructions
-structure InnerInstruction where
-  accounts : List Nat
-  data : String
-  programIdIndex : Nat
-  stackHeight : Option Nat
-  deriving ToJson, FromJson, Inhabited, Repr
-
--- Structure for an inner instruction block
-structure InnerInstructionBlock where
-  index : Nat
-  instructions : List InnerInstruction
-  deriving ToJson, FromJson, Inhabited, Repr
-
--- Structure for loaded addresses
-structure LoadedAddresses where
-  readonly : List String
-  writable : List String
-  deriving ToJson, FromJson, Inhabited, Repr
-
--- Structure for token balance
-structure TokenBalance where
-  accountIndex : Nat
-  mint : String
-  owner : String
-  programId : String
-  uiTokenAmount : Json -- Simplified; could be a detailed structure if needed
-  deriving ToJson, FromJson, Inhabited
-
--- Structure for meta information
-structure Meta2 where
-  computeUnitsConsumed : Nat
-  err : Option String
-  fee : Nat
-  innerInstructions : List InnerInstructionBlock
-  loadedAddresses : LoadedAddresses
-  logMessages : List String
-  postBalances : List Nat
-  postTokenBalances : List TokenBalance
-  preBalances : List Nat
-  preTokenBalances : List TokenBalance
-  rewards : List Json -- Empty in the example, so using Json for flexibility
-  status : Json -- Could be a sum type if status has fixed variants
-  deriving ToJson, FromJson, Inhabited
-
--- Structure for instruction
-structure Instruction where
-  accounts : List Nat
-  data : String
-  programIdIndex : Nat
-  stackHeight : Option Nat
-  deriving ToJson, FromJson, Inhabited
-
--- Structure for message header
-structure MessageHeader where
-  numReadonlySignedAccounts : Int
-  numReadonlyUnsignedAccounts : Int
-  numRequiredSignatures : Int
-  deriving ToJson, FromJson, Inhabited
-
--- Structure for message
-structure Message2 where
-  accountKeys : List String
-  addressTableLookups : List Json -- Empty in the example
-  header  : MessageHeader
-  instructions : List Instruction
-  recentBlockhash : String
-  deriving ToJson, FromJson, Inhabited
-
--- Structure for transaction
-structure Transaction where
-  message : Message2
-  signatures : List String
-  deriving ToJson, FromJson, Inhabited
-
--- Main TransactionDetails structure
--- structure TransactionDetails2 where
---    signatures : List String -- Extracted from transaction.signatures[0]
---    blockTime : Nat
---    slot : Slot
---    memo : Option String -- Not present in JSON, so Option String
---    err : Option String -- From meta.err
---    confirmationStatus : String -- Inferred as "finalized"
---    deriving ToJson, FromJson, Inhabited
-
-structure TransactionDetailsResult where
-  version : Int -- 0.0.0
-  transaction : Transaction
-  slot : Int
-  meta : Meta2
-  blockTime :Int --// : UnixTimestamp
-  deriving ToJson, FromJson, Inhabited
-
-structure Error where
-    code : Int
-    message : String
-    deriving ToJson, FromJson, Inhabited
-
-structure TransactionDetailsResult2 where
-  result : Option TransactionDetailsResult
-  error : Option Error
-  deriving ToJson, FromJson, Inhabited
-  --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
-
--- Function to convert JSON result to TransactionDetails
--- def TransactionDetails.fromResult (result : Json) : Option TransactionDetails :=
---   do
---     let blockTime ← result.getObjVal? "blockTime" >>= Json.getNat?
---     let slot ← result.getObjVal? "slot" >>= Json.getNat?
---     let meta :Meta2 ← result.getObjVal? "meta" >>= fromJson?
---     let transaction ← result.getObjVal? "transaction" >>= Transaction.fromJson?
---     let signature ← transaction.signatures.get? 0 -- First signature
---     let err ← meta.err -- Already an Option String
---     let confirmationStatus := "finalized" -- Hardcoded as per example
---     pure {
---       signature := signature,
---       blockTime := blockTime,
---       slot := slot,
---       memo := none, -- Not present in JSON
---       err := err,
---       confirmationStatus := confirmationStatus
---     }
-
--- Example usage (pseudo-code for parsing the JSON)
--- def parseTransactionDetails (json : Json) : Option TransactionDetails :=
---   do
---     let result ← json.getObjVal? "result"
-    --TransactionDetails.fromResult result
-
---.result.map (fun td => s!"{td.signature} {td.blockTime} {td.slot} {td.confirmationStatus}"
---instance : ToString TransactionDetailsResp where
--- toString resp := resp.result.map (fun td => s!"{td.signature} {td.blockTime} {td.slot} {td.confirmationStatus}")
- --s!"TransactionDetailsResp(response: {res})"  resp.result
--- toString _ := s!"TransactionDetailsResp(response:TODO)"
-
-structure TransactionDetailsResp where
-  result : List TransactionDetails
-  deriving ToJson, FromJson, Inhabited
-  --, Repr
-  --toString (resp :TransactionDetailsResp):String := s!"TransactionDetailsResp(response: {resp.response.map toString})"
-
-def getSig (td:TransactionDetails) := td.signature
-
-def good (td:TransactionDetails) : Bool :=
-  match td.err with
-  | none => true
-  | some _ => false
 -- recursive function to get the signature from the transaction details
-def getTransactionSignaturesDetails (json2: Json) : IO (Except String (TransactionDetailsResp)) := do
+def getTransactionSignaturesDetails (json2: Json) : IO (Except String (SolfunmemeLean.Common.TransactionDetailsResp)) := do
 
   --IO.println s!"Ledger details: {(json2.pretty).toSubstring.take 512 }"
   match fromJson?  json2 with
-  | Except.ok (details:TransactionDetailsResp) => do
+  | Except.ok (details:SolfunmemeLean.Common.TransactionDetailsResp) => do
       --let firstT := details.result[0]?
       --let goodList  := details.result.filter good
       --IO.println s!"found {goodList.length} good transactions"
@@ -278,32 +49,11 @@ def getTransactionSignaturesDetails (json2: Json) : IO (Except String (Transacti
     IO.println s!"Error parsing JSON: {err}"
       return (Except.error s!"Error parsing JSON: {err.toSubstring.take 1000 }")
 
-instance : ToString TransactionDetailsResp where
-toString _ := s!"TransactionDetailsResp"
-
-instance : ToString TransactionDetails where
-toString _ := s!"TransactionDetails"
-  --toString td := s!"TransactionDetails(signature: {td.signature}, blockTime: {td.blockTime}, slot: {td.slot}, err: {td.err}, programId: {td.programId}, accounts: {td.accounts})"
-
-def Pubkey := String
-deriving ToJson, FromJson, Inhabited, Repr, ToString
-
-structure TokenInfo where
-  mint  : Pubkey
-  supply : Nat
-  decimals : Nat
-  mintAuthority : Option Pubkey
-  freezeAuthority : Option Pubkey
-deriving ToJson, FromJson, Inhabited, Repr
-
-instance : ToString TokenInfo where
-toString _ := s!"TokenInfo..."
-
 -- Constants
-def CHUNK_SIZE : Nat := 100 -- Entries per chunk
-def SIDECHAIN_DIR : String := "ai_sidechain" -- Simulated sidechain
-def TOKEN_ADDRESS : Pubkey := "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"
-def CACHE_DIR : String := "rpc_cache" -- Directory for cached results
+-- def CHUNK_SIZE : Nat := 100 -- Entries per chunk
+-- def SIDECHAIN_DIR : String := "ai_sidechain" -- Simulated sidechain
+-- def TOKEN_ADDRESS : Pubkey := "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"
+-- def CACHE_DIR : String := "rpc_cache" -- Directory for cached results
 
 def generateContentCacheKey(method : String) (params : Json) (content : Json) : String :=
   let paramsHash := toString (hash params.compress)
@@ -316,7 +66,15 @@ def generateCacheKey (method : String) (params : Json) : String :=
 
 -- Check if cache exists for a given key
 def checkCache (cacheKey : String) : IO (Option String) := do
-  let cacheFile := s!"{CACHE_DIR}/{cacheKey}.json"
+
+  let config: SolfunmemeLean.Common.SidechainConfig ← pure {
+    cacheDir := "rpc_cache",
+    chunkSize := 100,
+    sidechainDir := "ai_sidechain",
+    tokenAddress := "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"
+  } -- Replace with actual implementation of getConfig
+  let cacheDir := config.cacheDir
+  let cacheFile := s!"{cacheDir}/{cacheKey}.json"
   --System.FilePath.pathExists
   --(p : System.FilePath) : BaseIO Bool
 
@@ -366,7 +124,7 @@ def prepareCallSolanaRpc (method : String) (params : Json) :  String :=
   generateCacheKey  keyName params
 
 -- Execute curl for Solana RPC with caching
-def callSolanaRpc (_method : String) (_params : Json ) (cacheKey:String) : IO (Except String String ) := do
+def callSolanaRpc (_config : SidechainConfig)(_method : String) (_params : Json ) (cacheKey:String) : IO (Except String String ) := do
 
   match (← checkCache cacheKey) with
   | some cachedContent =>
@@ -392,11 +150,11 @@ def prepareSaveRPC (_method : String) (result: String) : IO (Except String Json)
        --pure (Except.ok json)
 
 -- Query token mint info
-def getTokenInfo (address : Pubkey) : IO (Except String TokenInfo) := do
+def getTokenInfo (config: SolfunmemeLean.Common.SidechainConfig) (address : Pubkey) : IO (Except String SolfunmemeLean.Common.TokenInfo) := do
   let name := "getAccountInfo"
   let params := Json.arr #[Json.str address, Json.mkObj [("encoding", Json.str "jsonParsed")]]
   let cacheKey := prepareCallSolanaRpc name params
-  let response ← callSolanaRpc name params cacheKey
+  let response ← callSolanaRpc config name params cacheKey
   match response with
   | Except.error err => pure (Except.error err)
   | Except.ok astr =>
@@ -447,11 +205,11 @@ instance : ToString TransactionDetails2 where
 toString _ := s!"TransactionDetails2..."
 
 
-def getTransactionDetails (signature : Signature) : IO (Except String TransactionDetailsResult2) := do
+def getTransactionDetails (config: SidechainConfig) (signature : Signature) : IO (Except String TransactionDetailsResult2) := do
   let params := Json.arr #[Json.str signature,  Json.mkObj [ ( "maxSupportedTransactionVersion", Json.num 0 ) ]]
   let name := "getTransaction"
   let cacheKey := prepareCallSolanaRpc name params
-  let response ← callSolanaRpc name params  cacheKey
+  let response ← callSolanaRpc config name params  cacheKey
   match response with
   | Except.error err => pure (Except.error err)
   | Except.ok astr =>
@@ -497,27 +255,15 @@ def getTransactionSignaturesBefore (limit : Nat)(before: Option String) : Lean.J
 def firstTransactionSignature (details : TransactionDetailsResp ) : String :=
   details.result.getLast? |>.get!.signature -- Get the last element of the list
 
-  -- match details with
-  --match (List.getLast? details) with
---    | none => ""
-    --| some x => x -- Return the first signature
-  -- match details with
-  -- | [] => ""
-  -- | x :: b => b -- Return the first signature
 
-
-
---def recurseTransactions (ajson)(cacheKey) := do
-
-
-def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option String): IO (Except String (TransactionDetailsResp )) := do
+def getTransactionSignatures (config: SidechainConfig) (address : Pubkey) (limit : Nat) (before : Option String): IO (Except String (TransactionDetailsResp )) := do
   let name := "getSignaturesForAddress"
 
   --let before := Except.error "No previous signature"
   let args  := getTransactionSignaturesBefore limit before
   let params := Json.arr #[Json.str address, args]
   let cacheKey := prepareCallSolanaRpc name params
-  let response ← callSolanaRpc name params cacheKey
+  let response ← callSolanaRpc config name params cacheKey
   match response with
   | Except.error err => pure (Except.error err)
   | Except.ok astr =>
@@ -548,9 +294,9 @@ def getTransactionSignatures (address : Pubkey) (limit : Nat) (before : Option S
 
 
 
-def ProcessSignfun (sig:String) : IO Unit := do
+def ProcessSignfun (config: SidechainConfig) (sig:String) : IO Unit := do
       IO.println s!"Processing transaction signature: {sig}"
-      let txDetails ← getTransactionDetails sig
+      let txDetails ← getTransactionDetails config sig
       match txDetails with
       | Except.error err =>
         IO.println s!"Failed to fetch transaction details: {err}"
@@ -558,13 +304,50 @@ def ProcessSignfun (sig:String) : IO Unit := do
       | Except.ok details =>
         IO.println s!"Transaction Details fetched successfully \n{details}"
 
+-- filepath: c:\Users\gentd\OneDrive\Documents\GitHub\SOLFUNMEME\SolfunmemeLean\getSolfunmeme.lean
+
+def findBlocksInTransaction (details : TransactionDetailsResp) : List Nat :=
+  details.result.map (fun td => td.blockTime)
+
+def foldBlocksIntoRanges (blocks : List Nat) : List (Nat × Nat) :=
+  let sortedBlocks := blocks.mergeSort (· < ·) -- Sort the blocks in ascending order
+  sortedBlocks.foldl (fun acc block =>
+    match acc with
+    | [] => [(block, block)] -- Start with the first block as a range
+    | (start, end2) :: rest =>
+      if end2 - block < 2 then
+        -- Extend the current range if the block is sequential
+        (start, block) :: rest
+      else
+        -- Start a new range
+        (block, block) :: acc
+  ) []
+  |>.reverse -- Reverse the result to maintain the original order
   --termination_by fetchSignaturesLoop cursor
-def fetchSignaturesLoop (tokenAddress : String) (limit : Nat) (cursor : Option String) (maxBatches : Nat) : IO Unit := do
+
+
+
+def mergeRanges (ranges1 ranges2 : List (Nat × Nat)) : List (Nat × Nat) :=
+  let sortedRanges := (ranges1 ++ ranges2).mergeSort (fun (a b : Nat × Nat) => a.fst < b.fst)
+  sortedRanges.foldl (fun acc range =>
+    match acc with
+    | [] => [range] -- Start with the first range
+    | (start, end2) :: rest =>
+      if range.fst <= end2 + 1 then
+        -- Merge overlapping or adjacent ranges
+        (start, max end2 range.snd) :: rest
+      else
+        -- Add a new range
+        range :: acc
+  ) []
+  |>.reverse -- Reverse the result to maintain the original order
+
+def fetchSignaturesLoop (config: SidechainConfig) (tokenAddress : String) (limit : Nat) (cursor : Option String) (maxBatches : Nat) (start_blocks:List (Nat × Nat)): IO Unit := do
   if maxBatches = 0 then
     IO.println "Reached maximum batch limit."
     pure ()
   else
-    let txSignatures ← getTransactionSignatures tokenAddress limit cursor
+    let txSignatures ← getTransactionSignatures config tokenAddress limit cursor
     match txSignatures with
     | Except.error err =>
       IO.println s!"Failed to fetch transactions: {err}"
@@ -576,23 +359,40 @@ def fetchSignaturesLoop (tokenAddress : String) (limit : Nat) (cursor : Option S
         --pure ()
       --else
         let firstSig := firstTransactionSignature txs
-        IO.println s!"Loop First transaction signature: {firstSig}"
+        let blocks := findBlocksInTransaction txs
+        let ranges := foldBlocksIntoRanges blocks
 
-        fetchSignaturesLoop tokenAddress limit (some firstSig) (maxBatches - 1)
-  termination_by maxBatches
+        let mranges := mergeRanges ranges start_blocks
+
+        IO.println s!"Loop First transaction signature: {firstSig}"
+        IO.println s!"Blocks found in transaction: {ranges}"
+        IO.println s!"Merged ranges: {mranges}"  -- Added line to print merged ranges
+        let txSignatures ← fetchSignaturesLoop config tokenAddress limit (some firstSig) (maxBatches - 1) mranges
+        IO.println s!"Fetched transaction signatures: {txSignatures}"
+
+
+  --termination_by maxBatches cursor
 
 
 -- Main function
 def SolfunmemeLean : IO Unit := do
-  IO.println s!"Introspecting token: {TOKEN_ADDRESS}"
+
+  let config: SidechainConfig := {
+    cacheDir := "default_cache_dir",
+    chunkSize := 100,
+    sidechainDir := "ai_sidechain",
+    tokenAddress := "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump"}
+
+
+  IO.println s!"Introspecting token: {config.tokenAddress}"
 
   -- Create cache directory
-  IO.FS.createDirAll CACHE_DIR
-  IO.println s!"Using cache directory: {CACHE_DIR}"
+  IO.FS.createDirAll config.cacheDir
+  IO.println s!"Using cache directory: {config.cacheDir}"
 
   -- Get token info
   IO.println "Fetching token info..."
-  let tokenInfo ← getTokenInfo TOKEN_ADDRESS
+  let tokenInfo ← getTokenInfo config config.tokenAddress
   match tokenInfo with
   | Except.error err =>
     IO.println s!"Failed to fetch token info: {err}"
@@ -608,8 +408,12 @@ def SolfunmemeLean : IO Unit := do
 --    fetchSignaturesLoop TOKEN_ADDRESS 1000 none
       -- Entry point
       let maxBatches := 20000 -- Arbitrary limit, adjust as needed
-      let txSignatures ← fetchSignaturesLoop TOKEN_ADDRESS 1000 none maxBatches
+      let txSignatures ← fetchSignaturesLoop config config.tokenAddress 1000 none maxBatches []
       IO.println s!"Done processing token {txSignatures}"
+
+     -- let report := generateReport txSignatures
+     -- IO.println s!"Report generated: {report}"
+
       --pure ()
 
 
