@@ -1,0 +1,6 @@
+{
+  "chunkSize" : 100,
+  "sidechainDir" : "ai_sidechain",
+  "tokenAddress" : "BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump",
+  "cacheDir" : "rpc_cache"
+}
