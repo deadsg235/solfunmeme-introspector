@@ -1,0 +1,184 @@
+{
+  "summary": {
+    "total_urls": 15,
+    "accessible_urls": 14,
+    "failed_urls": 1,
+    "categories": {
+      "code_repository": 4,
+      "other": 4,
+      "social_twitter": 2,
+      "defi": 1,
+      "nft_marketplace": 1,
+      "social_telegram": 1,
+      "crypto_data": 1,
+      "social_discord": 1
+    }
+  },
+  "results": [
+    {
+      "original_url": "https://github.com/meta-introspector/introspector-llc",
+      "final_url": "https://github.com/meta-introspector/introspector-llc",
+      "status_code": 200,
+      "domain": "github.com",
+      "title": "GitHub - meta-introspector/introspector-llc: The First AI Dao Swarm LLC",
+      "content_type": "text/html; charset=utf-8",
+      "size": 255376,
+      "accessible": true,
+      "category": "code_repository"
+    },
+    {
+      "original_url": "https://arxiv.org/pdf/2306.15626",
+      "final_url": "https://arxiv.org/pdf/2306.15626",
+      "status_code": 200,
+      "domain": "arxiv.org",
+      "title": "",
+      "content_type": "application/pdf",
+      "size": 2967642,
+      "accessible": true,
+      "category": "other"
+    },
+    {
+      "original_url": "https://www.linkedin.com/posts/jamesmikedupont_join-the-str-discord-server-activity-7285429593245724673-mWPR?utm_source=share&utm_medium=member_android",
+      "final_url": "https://it.linkedin.com/posts/jamesmikedupont_join-the-str-discord-server-activity-7285429593245724673-mWPR",
+      "status_code": 200,
+      "domain": "www.linkedin.com",
+      "title": "Join the Str Discord Server! | James Michael DuPont",
+      "content_type": "text/html; charset=utf-8",
+      "size": 108123,
+      "accessible": true,
+      "category": "other"
+    },
+    {
+      "original_url": "https://x.com/zos_sfm",
+      "final_url": "https://x.com/zos_sfm",
+      "status_code": 200,
+      "domain": "x.com",
+      "title": "",
+      "content_type": "text/html; charset=utf-8",
+      "size": 225733,
+      "accessible": true,
+      "category": "social_twitter"
+    },
+    {
+      "original_url": "https://codeberg.org/introspector/meta-meme/src/branch/main/meta-meme/nft/mints/meta-meme-nft-1/description.md",
+      "final_url": "https://codeberg.org/introspector/meta-meme/src/branch/main/meta-meme/nft/mints/meta-meme-nft-1/description.md",
+      "status_code": 200,
+      "domain": "codeberg.org",
+      "title": "Cookie monster!",
+      "content_type": "text/html",
+      "size": 514,
+      "accessible": true,
+      "category": "code_repository"
+    },
+    {
+      "original_url": "https://app.streamflow.finance/contract/solana/mainnet/7Hny19uRWs6FhWFXrasUbqkE4rc8ciTdfQ2iyr2PVeva",
+      "final_url": "https://app.streamflow.finance/contract/solana/mainnet/7Hny19uRWs6FhWFXrasUbqkE4rc8ciTdfQ2iyr2PVeva",
+      "status_code": 200,
+      "domain": "app.streamflow.finance",
+      "title": "Token Vesting | Streamflow",
+      "content_type": "text/html",
+      "size": 5930,
+      "accessible": true,
+      "category": "defi"
+    },
+    {
+      "original_url": "https://codeberg.org/introspector/SOLFUNMEME",
+      "final_url": "https://codeberg.org/introspector/SOLFUNMEME",
+      "status_code": 200,
+      "domain": "codeberg.org",
+      "title": "introspector/SOLFUNMEME: HMEKzp Zero Ontology System (SOLFUNMEME) (ca BwUTq7fS6sfUmHDwAiCQZ3asSiPEapW5zDrsbwtapump) - Codeberg.org",
+      "content_type": "text/html; charset=utf-8",
+      "size": 60749,
+      "accessible": true,
+      "category": "code_repository"
+    },
+    {
+      "original_url": "https://twitter.com/introsp3ctor/",
+      "final_url": "https://x.com/introsp3ctor/",
+      "status_code": 200,
+      "domain": "twitter.com",
+      "title": "",
+      "content_type": "text/html; charset=utf-8",
+      "size": 225733,
+      "accessible": true,
+      "category": "social_twitter"
+    },
+    {
+      "original_url": "https://solfunmeme.com",
+      "final_url": "https://www.solfunmeme.com/",
+      "status_code": 200,
+      "domain": "solfunmeme.com",
+      "title": "This is the official website repository for the $SOLFUNMEME Zero Ontology System",
+      "content_type": "text/html; charset=utf-8",
+      "size": 71557,
+      "accessible": true,
+      "category": "other"
+    },
+    {
+      "original_url": "https://codeberg.org/introspector/meta-meme/issues/31",
+      "final_url": "https://codeberg.org/introspector/meta-meme/issues/31",
+      "status_code": 200,
+      "domain": "codeberg.org",
+      "title": "#31 - This Meme Is Too Dangerous [Redacted] - introspector/meta-meme - Codeberg.org",
+      "content_type": "text/html; charset=utf-8",
+      "size": 164817,
+      "accessible": true,
+      "category": "code_repository"
+    },
+    {
+      "original_url": "https://opensea.io/assets/base/0x0f4a030f9286ad80e36cd77636df8c7940c9c1b7/1",
+      "final_url": "https://opensea.io/item/base/0x0f4a030f9286ad80e36cd77636df8c7940c9c1b7/1",
+      "status_code": 200,
+      "domain": "opensea.io",
+      "title": "ZOST1 - Zero Ontology System Collection | OpenSea",
+      "content_type": "text/html; charset=utf-8",
+      "size": 849423,
+      "accessible": true,
+      "category": "nft_marketplace"
+    },
+    {
+      "original_url": "https://t.me/introsp3ctor",
+      "final_url": "https://t.me/introsp3ctor",
+      "status_code": 200,
+      "domain": "t.me",
+      "title": "Telegram: View @introsp3ctor",
+      "content_type": "text/html; charset=utf-8",
+      "size": 11745,
+      "accessible": true,
+      "category": "social_telegram"
+    },
+    {
+      "original_url": "https://coinmarketcap.com/nft/collections/base/0x81635719fafbde22f56e0ae57511fde658a4fad9/Meta-Introspector:%20The%20Mycorrhizal%20Arboreal%20Meme%20of%20Zero%20Ontology%20System/activity/",
+      "final_url": "https://coinmarketcap.com/nft/collections/base/0x81635719fafbde22f56e0ae57511fde658a4fad9/Meta-Introspector:%20The%20Mycorrhizal%20Arboreal%20Meme%20of%20Zero%20Ontology%20System/activity/",
+      "status_code": 200,
+      "domain": "coinmarketcap.com",
+      "title": "Meta-Introspector: The Mycorrhizal Arboreal Meme of Zero Ontology System NFT Collection Latest Price, Sales and Market Data | CoinMarketCap",
+      "content_type": "text/html; charset=utf-8",
+      "size": 152764,
+      "accessible": true,
+      "category": "crypto_data"
+    },
+    {
+      "original_url": "https://linktr.ee/h4km",
+      "final_url": "https://linktr.ee/h4km",
+      "status_code": 406,
+      "domain": "linktr.ee",
+      "title": "",
+      "content_type": "",
+      "size": 0,
+      "accessible": false,
+      "category": "other"
+    },
+    {
+      "original_url": "https://discord.gg/WASKdrBBzu",
+      "final_url": "https://discord.com/invite/WASKdrBBzu",
+      "status_code": 200,
+      "domain": "discord.gg",
+      "title": "Str Introspector $SOLFUNMEME",
+      "content_type": "text/html",
+      "size": 11425,
+      "accessible": true,
+      "category": "social_discord"
+    }
+  ]
+}

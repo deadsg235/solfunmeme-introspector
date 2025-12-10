@@ -1,4 +1,3 @@
---import SolfunmemeLean
+import SolfunmemeLean.getSolfunmeme
 
---def main : IO Unit :=
---  IO.println s!"Hello, {hello}!"
+-- Main function is already defined in getSolfunmeme.lean

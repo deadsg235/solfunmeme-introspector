@@ -1,0 +1,5 @@
+{"log":
+ [{"message":
+   ".> LEAN_PATH=.\\.\\.lake\\build\\lib\\lean c:\\Users\\deads\\.elan\\toolchains\\leanprover--lean4---v4.18.0\\bin\\lean.exe .\\.\\.\\.\\SolfunmemeLean\\getSolfunmeme.lean -R .\\.\\.\\. -o .\\.\\.lake\\build\\lib\\lean\\SolfunmemeLean\\getSolfunmeme.olean -i .\\.\\.lake\\build\\lib\\lean\\SolfunmemeLean\\getSolfunmeme.ilean -c .\\.\\.lake\\build\\ir\\SolfunmemeLean\\getSolfunmeme.c --json",
+   "level": "trace"}],
+ "depHash": "16041657016180263409"}
