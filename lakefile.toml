@@ -1,0 +1,10 @@
+name = "solfunmeme-lean"
+version = "0.1.0"
+defaultTargets = ["solfunmeme-lean"]
+
+[[lean_lib]]
+name = "SolfunmemeLean"
+
+[[lean_exe]]
+name = "solfunmeme-lean"
+root = "Main"

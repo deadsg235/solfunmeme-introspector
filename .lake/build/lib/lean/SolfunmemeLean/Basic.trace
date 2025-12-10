@@ -1,0 +1,11 @@
+{"log":
+ [{"message":
+   ".> LEAN_PATH=.\\.\\.lake\\build\\lib\\lean c:\\Users\\gentd\\.elan\\toolchains\\leanprover--lean4---v4.18.0\\bin\\lean.exe .\\.\\.\\.\\SolfunmemeLean\\Basic.lean -R .\\.\\.\\. -o .\\.\\.lake\\build\\lib\\lean\\SolfunmemeLean\\Basic.olean -i .\\.\\.lake\\build\\lib\\lean\\SolfunmemeLean\\Basic.ilean -c .\\.\\.lake\\build\\ir\\SolfunmemeLean\\Basic.c --json",
+   "level": "trace"},
+  {"message":
+   ".\\.\\.\\.\\SolfunmemeLean\\Basic.lean:31:0: Except.ok { account_name := \"Example Company\",\n  account_number := \"1234567890\",\n  entries := #[{ entry_date := \"2023-10-14\", description := \"Opening Balance\" },\n               { entry_date := \"2023-10-15\", description := \"Sale of Products\" },\n               { entry_date := \"2023-10-16\", description := \"Purchase of Supplies\" },\n               { entry_date := \"2023-10-17\", description := \"Payment from Customer\" },\n               { entry_date := \"2023-10-18\", description := \"Utilities Expense\" }] }",
+   "level": "info"},
+  {"message":
+   ".\\.\\.\\.\\SolfunmemeLean\\Basic.lean:32:0: {\"entries\":\n [{\"entry_date\": \"2023-10-14\", \"description\": \"Opening Balance\"},\n  {\"entry_date\": \"2023-10-15\", \"description\": \"Sale of Products\"},\n  {\"entry_date\": \"2023-10-16\", \"description\": \"Purchase of Supplies\"},\n  {\"entry_date\": \"2023-10-17\", \"description\": \"Payment from Customer\"},\n  {\"entry_date\": \"2023-10-18\", \"description\": \"Utilities Expense\"}],\n \"account_number\": \"1234567890\",\n \"account_name\": \"Example Company\"}",
+   "level": "info"}],
+ "depHash": "777237911997396743"}
